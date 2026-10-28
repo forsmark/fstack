@@ -1,0 +1,9 @@
+{
+  "name": "cache-warmer",
+  "version": "0.1.0",
+  "description": "Keeps an idle session's 1-hour prompt cache warm with a background fork every 55 minutes",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT"
+}

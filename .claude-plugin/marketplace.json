@@ -1,0 +1,7 @@
+{
+  "name": "claude-mods",
+  "owner": { "name": "Marc Forsmark Nielsen" },
+  "plugins": [
+    { "name": "cache-warmer", "source": "./cache-warmer" }
+  ]
+}
