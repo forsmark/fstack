@@ -1,0 +1,9 @@
+{
+  "name": "email-guard",
+  "version": "0.1.0",
+  "description": "Blocks tool calls that would put a personal email address into an outgoing request header",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT"
+}
