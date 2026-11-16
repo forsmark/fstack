@@ -1,0 +1,10 @@
+{
+  "name": "usage-limits",
+  "version": "0.2.0",
+  "description": "Reads the 5-hour and weekly usage windows and their reset times, and tells Claude to write a handoff at 90%",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
