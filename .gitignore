@@ -1,5 +1,6 @@
 # written by Claude Code when it loads a mod
 .claude-plugin/types/
 */.claude-plugin/types/
+*/tsconfig.json
 .mcpb-cache/
 node_modules/

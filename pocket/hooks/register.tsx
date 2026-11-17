@@ -484,7 +484,7 @@ async function view($: EngineInterface, e: Parameters<EngineInterface['ui']['res
             ))}
             <Input
               key={`${q.id}:own`}
-              label="Your own answer:"
+              label="Your own answer"
               placeholder="type and press Enter"
               submitLabel="answer"
               onSubmit={value => press($, q.id, value)}
