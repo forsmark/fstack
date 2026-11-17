@@ -482,11 +482,19 @@ async function view($: EngineInterface, e: Parameters<EngineInterface['ui']['res
             </Text>
             <Text>{q.question}</Text>
             <Box marginTop={1}>
-              <Text dimColor>Context: {q.context}</Text>
+              <Text>
+                <Text bold>Context:</Text> <Text dimColor>{q.context}</Text>
+              </Text>
             </Box>
             <Box flexDirection="column" marginTop={1}>
-              <Text dimColor>Meanwhile: {q.meanwhile}</Text>
-              {q.relates_to ? <Text dimColor>Relates to: {q.relates_to}</Text> : null}
+              <Text>
+                <Text bold>Meanwhile:</Text> <Text dimColor>{q.meanwhile}</Text>
+              </Text>
+              {q.relates_to ? (
+                <Text>
+                  <Text bold>Relates to:</Text> <Text dimColor>{q.relates_to}</Text>
+                </Text>
+              ) : null}
             </Box>
             {q.options.map((option, index) => (
               <Box flexDirection="column" marginTop={1}>
