@@ -1,0 +1,7 @@
+{
+  "name": "image-preview",
+  "version": "0.1.0",
+  "description": "Shows images from tool results (Read, screenshots, MCP tools) inline in the terminal transcript",
+  "author": { "name": "Marc Forsmark Nielsen" },
+  "license": "MIT"
+}

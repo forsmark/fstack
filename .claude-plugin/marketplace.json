@@ -19,6 +19,10 @@
     {
       "name": "pocket",
       "source": "./pocket"
+    },
+    {
+      "name": "image-preview",
+      "source": "./image-preview"
     }
   ]
 }
