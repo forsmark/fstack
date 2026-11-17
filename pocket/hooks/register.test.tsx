@@ -29,7 +29,7 @@ const RESET = {
 
 type Engine = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>>[1]
 type Dollar = Parameters<Extract<Parameters<typeof test>[1], (...args: never[]) => unknown>>[0]
-type World = { session?: string; drop?: string }
+type World = { session?: string; drop?: string; isPaneOpen?: boolean }
 
 // Stands for the engine beneath the mod. Returns what the mod did.
 function engine(on: Engine, world: World = {}) {
@@ -86,6 +86,7 @@ function engine(on: Engine, world: World = {}) {
     seen.notifications.push((e as { text: string }).text)
     return { value: { isSent: true, channel: 'test' } } as never
   })
+  on('ui.panes', () => ({ value: world.isPaneOpen ? [{ id: 'pocket', title: 'Pocket', isPlaced: true }] : [] }) as never)
   on('ui.open', (_, e) => {
     seen.opened.push((e as { id: string }).id)
     return { value: { isPlaced: true } }
@@ -345,4 +346,37 @@ test('the band and the pane draw the pocket, and a press answers', async ($, on)
   expect(seen.prompts.map(p => p.text).join('\n')).toContain(`Pocket answer Q1 "${RETENTION.question}": a, 100 days`)
   expect(seen.prompts.map(p => p.text).join('\n')).toContain(`Pocket answer Q2 "${RESET.question}": yes`)
   expect(seen.prompts.every(p => p.asUser)).toBe(true)
+})
+
+test('the /pocket row is one line in the terminal while the pane shows the questions', async ($, on) => {
+  const world: World = {}
+  engine(on, world)
+  await start($)
+  await call($, ASK, RETENTION)
+  const row = (surface: 'terminal' | 'desktop', args = '') =>
+    $.ui.mount({
+      plugin: 'pocket',
+      component: 'CommandOutput',
+      requestId: 'm1',
+      surface,
+      props: { command: 'pocket', args, text: 'plain', isErrored: false },
+    } as never)
+
+  // No pane: the row is the pocket, with its buttons.
+  let drawn = await row('terminal')
+  expect(await drawn.find({ type: 'Button', key: 'Q1:a' })).not.toBe(undefined)
+  await drawn.unmount()
+
+  world.isPaneOpen = true
+  drawn = await row('terminal')
+  expect(await drawn.find({ type: 'Button' })).toBe(undefined)
+  expect((await drawn.find({ type: 'Text' }))?.text).toBe('pocket: 1 open, oldest 0m, shown in the pane')
+  await drawn.unmount()
+
+  // Another surface may show no pane, and one question asked for by id is
+  // drawn in full.
+  for (const full of [await row('desktop'), await row('terminal', '1')]) {
+    expect(await full.find({ type: 'Button', key: 'Q1:a' })).not.toBe(undefined)
+    await full.unmount()
+  }
 })

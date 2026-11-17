@@ -129,8 +129,12 @@ What you see:
   `pocket: 3 open, 1 blocks work, oldest 4h`. Its `open` button opens the
   pocket in a pane.
 - `/pocket` lists every question in full, with a button for each option and a
-  field for your own answer. In the terminal it also opens the pane. The list
-  is shown to you only. It goes in no request, so it costs no tokens.
+  field for your own answer. In the terminal it also opens the pane, and the
+  row in the transcript is then one line. There the list is shown to you only. It goes in no request, so it costs no tokens.
+- On the phone and on the web, through Remote Control, `/pocket` prints the
+  list as plain text, with the command that answers each question. They show
+  no row above the prompt, no pane and no buttons. Claude reads that text
+  too, so a list from there costs the tokens of the questions it shows.
 - A question that blocks work also raises one notification when Claude
   pockets it. There is no other reminder.
 
@@ -156,7 +160,9 @@ What Claude calls:
 
 - `mcp__pocket__ask` pockets a question and returns its id. Its description
   holds the rules: pocket a decision that is yours and can wait, decide the
-  rest itself, and do not repeat a pocketed question in later messages.
+  rest itself, and do not repeat a pocketed question in later messages. One
+  rule tells Claude to end each status message with `Pocket: <n> open` while
+  questions wait, because the phone and the web show no other sign.
 - `mcp__pocket__update` changes a question or withdraws it with a reason. You
   see a changed question as edited. A withdrawn question stays in the list
   with its reason until you dismiss it, with its button or `/pocket dismiss`.

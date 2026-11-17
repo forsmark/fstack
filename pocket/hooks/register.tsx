@@ -31,6 +31,7 @@ Rules:
 - "meanwhile" says what you do until the answer comes: your default, or "I wait".
 - urgency "blocks" means work stops until the answer. Use it rarely. The user gets a notification.
 - Do not repeat a pocketed question in later messages. The pocket shows it.
+- While the pocket holds open questions, end each status message to the user with one line: "Pocket: <n> open". The phone and the web show no other sign that questions wait.
 - When events make a question moot, or the user answers it in the chat, withdraw it with mcp__pocket__update.
 - Main session only. A subagent returns its question to its caller.`
 
@@ -181,7 +182,7 @@ export function listText(list: readonly Question[], nowMs: number) {
       if (q.status !== 'open') {
         return `${q.id}, withdrawn: ${q.question}\nReason: ${q.reason ?? 'none given'}\nDismiss it with /pocket ${number} dismiss`
       }
-      const how = q.options.length > 0 ? `/pocket ${number} a` : `/pocket ${number} <your answer>`
+      const how = q.options.length > 0 ? `/pocket ${number} a, or /pocket ${number} <your own answer>` : `/pocket ${number} <your own answer>`
       return [...recordLines(q, nowMs), `Answer with ${how}`].join('\n')
     })
     .join('\n\n')
@@ -452,14 +453,26 @@ async function view($: EngineInterface, e: Parameters<EngineInterface['ui']['res
   const now = await $.clock.now()
   const all = await read($, questions)
   const list = only === undefined ? all : all.filter(q => q.id === only)
+  // A line between two questions, as wide as the room and at most 60 cells.
+  const site = e as { props?: { bodyColumns?: number }; viewport?: { columns?: number } }
+  const rule = '─'.repeat(Math.max(8, Math.min(60, site.props?.bodyColumns ?? site.viewport?.columns ?? 40)))
+  const divider = (index: number) =>
+    index === 0 ? null : (
+      <Box marginBottom={1}>
+        <Text dimColor wrap="truncate-end">
+          {rule}
+        </Text>
+      </Box>
+    )
   if (list.length === 0) {
     return <Text dimColor>{only === undefined ? 'The pocket is empty.' : `${only} is not in the pocket any more.`}</Text>
   }
   return (
     <Box flexDirection="column">
-      {list.map(q =>
+      {list.map((q, index) =>
         q.status === 'open' ? (
           <Box flexDirection="column" marginBottom={1}>
+            {divider(index)}
             <Text bold>
               {q.id} {q.urgency === 'blocks' ? 'blocks work' : 'no hurry'}{' '}
               <Text dimColor>
@@ -468,11 +481,15 @@ async function view($: EngineInterface, e: Parameters<EngineInterface['ui']['res
               </Text>
             </Text>
             <Text>{q.question}</Text>
-            <Text dimColor>Context: {q.context}</Text>
-            <Text dimColor>Meanwhile: {q.meanwhile}</Text>
-            {q.relates_to ? <Text dimColor>Relates to: {q.relates_to}</Text> : null}
+            <Box marginTop={1}>
+              <Text dimColor>Context: {q.context}</Text>
+            </Box>
+            <Box flexDirection="column" marginTop={1}>
+              <Text dimColor>Meanwhile: {q.meanwhile}</Text>
+              {q.relates_to ? <Text dimColor>Relates to: {q.relates_to}</Text> : null}
+            </Box>
             {q.options.map((option, index) => (
-              <Box flexDirection="column">
+              <Box flexDirection="column" marginTop={1}>
                 <Button
                   key={`${q.id}:${letter(index)}`}
                   label={`${letter(index)}: ${option.label}${option.recommended ? ' (recommended)' : ''}`}
@@ -482,16 +499,19 @@ async function view($: EngineInterface, e: Parameters<EngineInterface['ui']['res
                 <Text dimColor>   leads to {option.leads_to}</Text>
               </Box>
             ))}
-            <Input
-              key={`${q.id}:own`}
-              label="Your own answer"
-              placeholder="type and press Enter"
-              submitLabel="answer"
-              onSubmit={value => press($, q.id, value)}
-            />
+            <Box marginTop={1}>
+              <Input
+                key={`${q.id}:own`}
+                label="Your own answer"
+                placeholder="type and press Enter"
+                submitLabel="answer"
+                onSubmit={value => press($, q.id, value)}
+              />
+            </Box>
           </Box>
         ) : (
           <Box flexDirection="column" marginBottom={1}>
+            {divider(index)}
             <Text dimColor>
               {q.id} withdrawn {q.edited_at === undefined ? '' : clockTime(q.edited_at)}: {q.question}
             </Text>
@@ -576,7 +596,8 @@ export const register: Register = on => {
     }
     if (asked.kind === 'list' || asked.kind === 'show') {
       await refresh($)
-      if (asked.kind === 'list' && e.origin.kind === 'composer') void $.ui.open({ id: PANE, title: 'Pocket' }).catch(() => undefined)
+      // Awaited, so the row knows the pane is there when it draws.
+      if (asked.kind === 'list' && e.origin.kind === 'composer') await $.ui.open({ id: PANE, title: 'Pocket' }).catch(() => undefined)
       if (asked.kind === 'list') return show()
       const one = (await read($, questions)).filter(q => q.id === asked.id)
       const said = one.length === 0 ? `${asked.id} is not in the pocket.` : listText(one, await $.clock.now())
@@ -635,9 +656,17 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'Pane', requestId: PANE }, ($, e) => view($, e))
 
-  on('ui.render', { component: 'CommandOutput', props: { command: COMMAND } }, ($, e, next) => {
+  on('ui.render', { component: 'CommandOutput', props: { command: COMMAND } }, async ($, e, next) => {
     const asked = parseArgs(e.props.args)
     if (e.props.isErrored || (asked.kind !== 'list' && asked.kind !== 'show')) return next(e)
-    return view($, e, asked.kind === 'show' ? asked.id : undefined)
+    // Where the pane shows the questions, a second copy in the transcript is
+    // noise: the row is then one line.
+    const isInPane =
+      asked.kind === 'list' && e.surface === 'terminal' && (await $.ui.panes()).some(pane => pane.id === PANE && pane.isPlaced)
+    if (!isInPane) return view($, e, asked.kind === 'show' ? asked.id : undefined)
+    const { Text } = $.ui.resolve(e)
+    const list = await read($, questions)
+    const line = list.length === 0 ? 'The pocket is empty.' : `${bandText(list, await $.clock.now())}, shown in the pane`
+    return <Text dimColor>{line}</Text>
   })
 }
