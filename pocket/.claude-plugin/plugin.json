@@ -1,0 +1,10 @@
+{
+  "name": "pocket",
+  "version": "0.1.0",
+  "description": "A pocket for questions Claude has for you while you are away: Claude pockets a question and continues, you answer it when you are ready",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

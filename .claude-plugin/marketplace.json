@@ -15,6 +15,10 @@
     {
       "name": "usage-limits",
       "source": "./usage-limits"
+    },
+    {
+      "name": "pocket",
+      "source": "./pocket"
     }
   ]
 }
