@@ -1,9 +1,55 @@
-# claude-mods
+# fstack
 
-Personal Claude Code mods (function-hook plugins). This repository is also a
-plugin marketplace.
+Forsmark's Claude Code stack: plugins, skills, output styles and global
+instructions. The repository is also a plugin marketplace, named `fstack`.
 
-## cache-warmer
+```
+plugins/        function-hook plugins (mods), installed from the fstack marketplace
+skills/         skills, linked into ~/.claude/skills/
+output-styles/  output styles, linked into ~/.claude/output-styles/
+global/         CLAUDE.md, linked to ~/.claude/CLAUDE.md
+install.sh      links and installs all of the above
+```
+
+## Install
+
+```
+git clone https://github.com/forsmark/fstack.git ~/dev/fstack
+~/dev/fstack/install.sh
+```
+
+The script links each skill, output style and the global `CLAUDE.md` into
+`~/.claude/`, and moves a file that stands in the way to `<name>.bak.<time>`.
+It adds the folder as the `fstack` marketplace and installs every plugin at
+user scope. Run it again after you add a skill or a plugin: what is in place
+stays as it is.
+
+Because everything is linked or read from the folder, an edit applies at once
+for skills, output styles and `CLAUDE.md`, and on `/reload-plugins` for
+plugins.
+
+One plugin alone, from GitHub without a checkout:
+
+```
+/plugin install cache-warmer --marketplace forsmark/fstack
+```
+
+This is a private repository: installing from GitHub needs read access and a
+git credential for github.com on the machine (an SSH key, or `gh auth login`
+then `gh auth setup-git`).
+
+## Adding to the stack
+
+- A plugin goes in `plugins/<name>/` and gets an entry in
+  `.claude-plugin/marketplace.json`.
+- A skill goes in `skills/<name>/SKILL.md`.
+- An output style goes in `output-styles/<name>.md`.
+
+Then run `install.sh`.
+
+## Plugins
+
+### cache-warmer
 
 Keeps an idle session's 1-hour prompt cache warm. When the main loop finishes a
 turn, a 55-minute timer starts. If you haven't sent anything when it fires, the
@@ -21,9 +67,9 @@ transcript and your prompt box is never touched.
 Each ping costs a cache read of the whole context (about 10% of base input
 price) plus a few output tokens, and counts against plan usage.
 
-Tune `IDLE_MS` and `MAX_PINGS` at the top of `cache-warmer/hooks/register.ts`.
+Tune `IDLE_MS` and `MAX_PINGS` at the top of `plugins/cache-warmer/hooks/register.ts`.
 
-## email-guard
+### email-guard
 
 Blocks any tool call that would put a personal email address into an outgoing
 request header. Claude gets an error that tells it to retry without the
@@ -48,10 +94,10 @@ What it cannot see: a header set through a shell variable
 (`UA="..."; curl -A "$UA"`), or one written into a script file that a later
 command runs.
 
-Edit the address list in `EMAILS` at the top of `email-guard/hooks/register.ts`.
+Edit the address list in `EMAILS` at the top of `plugins/email-guard/hooks/register.ts`.
 Run the tests with `claude plugin test email-guard`.
 
-## usage-limits
+### usage-limits
 
 Reads the 5-hour and the weekly usage window: the percentage used and the
 reset time of each. At 90% it tells Claude to write a handoff. It is the port
@@ -108,10 +154,10 @@ Cases it handles:
   subscription login: no figure from it, and no second request for 60 seconds.
 
 Tune `THRESHOLD` and the time limits at the top of
-`usage-limits/hooks/register.ts`. Run the tests with
+`plugins/usage-limits/hooks/register.ts`. Run the tests with
 `claude plugin test usage-limits`.
 
-## pocket
+### pocket
 
 A pocket for questions that Claude has for you while you are away. Claude puts
 a question in the pocket and continues with other work. You see that questions
@@ -199,7 +245,7 @@ What it does not do:
 
 Run the tests with `claude plugin test pocket`.
 
-## image-preview
+### image-preview
 
 Shows images from tool results inline in the terminal transcript, under the
 tool row. The web and mobile clients already show these images. This mod
@@ -236,32 +282,44 @@ later release can change it.
 `/image-previews off` and `/image-previews on` turn the previews off and on.
 With no argument the command toggles. The setting persists across sessions.
 
-The constants at the top of `image-preview/hooks/register.tsx` set the largest
+The constants at the top of `plugins/image-preview/hooks/register.tsx` set the largest
 preview (`MAX_COLUMNS`, `MAX_ROWS`) and the cell shape (`CELL_ASPECT`, cell
 height divided by cell width). If previews look stretched or squashed, change
 `CELL_ASPECT`.
 
-## Install
+## Skills
 
-At the prompt of a Claude Code terminal session:
+### humanize
 
-```
-/plugin install cache-warmer --marketplace forsmark/claude-mods
-```
-
-From a shell:
-
-```
-claude plugin install cache-warmer --marketplace forsmark/claude-mods
-```
-
-This is a private repository: installing needs read access on GitHub and a git
-credential for github.com on the machine (an SSH key, or `gh auth login` then
-`gh auth setup-git`).
-
-To run it from a local checkout instead, so edits apply on `/reload-plugins`:
+It audits and rewrites reader-facing
+copy (interface strings, pages, mails, release notes, errors) for writing that
+reads as generated. It reads a page or a mail whole. A pattern of generated
+writing counts only where it returns or shares its page with other findings.
+One pattern, once, can stay.
 
 ```
-claude plugin marketplace add ~/development/claude-mods
-claude plugin install cache-warmer@claude-mods
+/humanize audit src/pages/signup
+/humanize rewrite mails/welcome.html
 ```
+
+Audit is the default and changes nothing. A rewrite runs only on request. It
+removes the pattern and keeps every fact, number, link and condition, and it
+never rewrites legal text in place. Claude also reaches for the skill by itself
+when it writes copy.
+
+Each project states its own reader, voice, words, limits and legal text in
+`.claude/humanize.md`. The skill offers to write one from
+`references/profile-template.md`. For a whole site it follows the review method
+in `references/large-jobs.md`.
+
+## Output styles
+
+### simple-technical
+
+Plain, single-meaning prose that follows the structural rules of ASD-STE100
+Simplified Technical English. Pick it with `/output-style`.
+
+## Global instructions
+
+`global/CLAUDE.md` is linked to `~/.claude/CLAUDE.md`, the instructions every
+session loads. It tells Claude to use `ketch` for web search and fetching.

@@ -1,28 +1,28 @@
 {
-  "name": "claude-mods",
+  "name": "fstack",
   "owner": {
     "name": "Marc Forsmark Nielsen"
   },
   "plugins": [
     {
       "name": "cache-warmer",
-      "source": "./cache-warmer"
+      "source": "./plugins/cache-warmer"
     },
     {
       "name": "email-guard",
-      "source": "./email-guard"
+      "source": "./plugins/email-guard"
     },
     {
       "name": "usage-limits",
-      "source": "./usage-limits"
+      "source": "./plugins/usage-limits"
     },
     {
       "name": "pocket",
-      "source": "./pocket"
+      "source": "./plugins/pocket"
     },
     {
       "name": "image-preview",
-      "source": "./image-preview"
+      "source": "./plugins/image-preview"
     }
   ]
 }
