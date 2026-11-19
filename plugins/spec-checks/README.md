@@ -35,7 +35,9 @@ The helpers are `gate <change>`, `claims <change>`, `preview <change>`,
 them. `vendor` copies the CLI into the project at `tools/spec-checks/`, so CI
 runs it without the plugin. The hook runs that copy when there is one.
 
-The coverage check parses test files with the TypeScript compiler. It loads
-`typescript` from the project. The project templates are in
+The coverage check parses test files with the TypeScript compiler API. It loads
+`typescript` from the project. TypeScript 7 ships without that API, so a
+project on 7 adds `@typescript/typescript6` as a dev dependency, the package
+TypeScript publishes to run beside 7, and the check loads that instead. The project templates are in
 `plugins/spec-checks/templates/`. Run the tests with
 `cd plugins/spec-checks && pnpm install && pnpm test`.

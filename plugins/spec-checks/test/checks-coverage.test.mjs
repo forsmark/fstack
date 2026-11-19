@@ -156,4 +156,33 @@ describe('loading TypeScript', () => {
   it("falls back to the plugin's typescript where the project has none", () => {
     assert.equal(loadTypeScript(repo.root), createRequire(import.meta.url)('typescript'));
   });
+
+  // TypeScript 7 compiles natively and ships no compiler API. A project on it keeps the API
+  // through @typescript/typescript6, the side-by-side package TypeScript publishes for tools.
+  const typeScriptSeven = () =>
+    repo.write({
+      'node_modules/typescript/package.json': '{ "name": "typescript", "version": "7.0.2", "main": "version.cjs" }\n',
+      'node_modules/typescript/version.cjs': 'exports.version = "7.0.2";\n',
+    });
+
+  it("takes @typescript/typescript6 where the project's typescript is 7 and has no compiler API", () => {
+    typeScriptSeven();
+    const plugin = createRequire(import.meta.url).resolve('typescript');
+    repo.write({
+      'node_modules/@typescript/typescript6/package.json': '{ "name": "@typescript/typescript6", "main": "index.js" }\n',
+      'node_modules/@typescript/typescript6/index.js': `globalThis.typeScriptSixLoaded = true;\nmodule.exports = require(${JSON.stringify(plugin)});\n`,
+    });
+    assert.deepEqual(check().problems, []);
+    assert.equal(globalThis.typeScriptSixLoaded, true);
+  });
+
+  it("falls back to the plugin's typescript where the project's typescript has no compiler API", () => {
+    typeScriptSeven();
+    assert.equal(loadTypeScript(repo.root), createRequire(import.meta.url)('typescript'));
+  });
+
+  it('names @typescript/typescript6 when the only typescript it finds has no compiler API', () => {
+    typeScriptSeven();
+    assert.throws(() => loadTypeScript(repo.root, [repo.root]), /typescript 7\.0\.2 has none.*@typescript\/typescript6/);
+  });
 });
