@@ -1,0 +1,12 @@
+{
+  "name": "spec-checks",
+  "private": true,
+  "type": "module",
+  "description": "The spec-checks plugin. The CLI has no dependencies. typescript is here for the tests: in a project, the coverage check loads the project's own.",
+  "scripts": {
+    "test": "node --test 'test/*.test.mjs'"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}

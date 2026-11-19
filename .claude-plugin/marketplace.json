@@ -23,6 +23,10 @@
     {
       "name": "image-preview",
       "source": "./plugins/image-preview"
+    },
+    {
+      "name": "spec-checks",
+      "source": "./plugins/spec-checks"
     }
   ]
 }

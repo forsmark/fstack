@@ -1,0 +1,17 @@
+# A GitHub Actions job that runs the spec checks with the project's vendored copy
+# of the CLI. Every check compares with the merge base of HEAD and the base ref,
+# so the job needs the full history: with a shallow clone the base is missing,
+# and spec-checks fails when CI is set rather than compare nothing.
+spec-checks:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+    # Install the project's dependencies here when coverage parses test files:
+    # it loads typescript from the project.
+    - run: npm install -g @fission-ai/openspec@2.1.0
+    - run: node tools/spec-checks/bin/spec-checks verify

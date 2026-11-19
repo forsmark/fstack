@@ -1,0 +1,18 @@
+{
+  "description": "Run spec-checks validate and dropped after a tool call that touches openspec/specs, in a project with openspec/checks.json",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/spec-hook.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Checking specs..."
+          }
+        ]
+      }
+    ]
+  }
+}

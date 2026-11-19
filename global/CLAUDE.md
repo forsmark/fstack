@@ -9,7 +9,6 @@
 - Crawl a site: `ketch crawl <url>`.
 - Search public source code: `ketch code "<pattern>" --lang <lang>`.
 - Library and framework docs: `ketch docs "<library>"`.
-- Add `--json` for structured output, and `--max-chars N` to limit long pages.
 - Run `ketch <command> -h` for flags, and `ketch doctor` if a backend fails.
 
 Fall back to WebSearch or WebFetch only when ketch fails or cannot reach the content. Say so when you fall back. For pages that need a login, use the browser tools or `gh` instead.

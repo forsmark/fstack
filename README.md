@@ -287,6 +287,48 @@ preview (`MAX_COLUMNS`, `MAX_ROWS`) and the cell shape (`CELL_ASPECT`, cell
 height divided by cell width). If previews look stretched or squashed, change
 `CELL_ASPECT`.
 
+### spec-checks
+
+An OpenSpec working practice and the checks that hold specs to it. It has
+three parts:
+
+- The `practice` skill: how a change is proposed, applied and archived, how a
+  spec is written, how each scenario maps to a test, and how a sweep finds
+  specs that disagree. Each step's reference loads only at that step.
+- The `spec-checks` CLI, on the Bash PATH while the plugin is on.
+- A hook that runs `spec-checks validate` and `spec-checks dropped` after a
+  tool call that touches `openspec/specs`. On a failure, Claude gets the
+  problems.
+
+All three do nothing in a project without `openspec/checks.json`. That file
+is the opt-in, and the `openspec-migrate` skill offers it.
+
+The checks, which `spec-checks verify` runs in the order the config lists:
+
+| Check | Fails on |
+| --- | --- |
+| `validate` | an error from `openspec validate --specs --strict`, and a requirement over 500 characters |
+| `coverage` | a scenario with no test and no reason in the coverage map, or a changed scenario whose test did not change |
+| `shall` | a requirement with more SHALL sentences than scenarios |
+| `dropped` | a requirement that left a main spec without a REMOVED or RENAMED delta |
+| `repeated` | the same list in two specs |
+| `gate --check` | a rule dropped from a delta after a person approved the proposal |
+
+Each check compares with the merge base of HEAD and the first ref in
+`baseRefs`. A check's baseline lists the gaps a project had when it adopted
+the checks, and it only shrinks. In CI, a missing base is a failure, so the
+job needs `fetch-depth: 0`.
+
+The helpers are `gate <change>`, `claims <change>`, `preview <change>`,
+`sweep-groups`, `sweep-dismissed` and `vendor`. `spec-checks --help` lists
+them. `vendor` copies the CLI into the project at `tools/spec-checks/`, so CI
+runs it without the plugin. The hook runs that copy when there is one.
+
+The coverage check parses test files with the TypeScript compiler. It loads
+`typescript` from the project. The project templates are in
+`plugins/spec-checks/templates/`. Run the tests with
+`cd plugins/spec-checks && pnpm install && pnpm test`.
+
 ## Skills
 
 ### humanize
@@ -311,6 +353,40 @@ Each project states its own reader, voice, words, limits and legal text in
 `.claude/humanize.md`. The skill offers to write one from
 `references/profile-template.md`. For a whole site it follows the review method
 in `references/large-jobs.md`.
+
+### affected-tests
+
+Each subagent runs only the tests its changes can reach, and the full suite
+runs once per batch. The skill holds the rules and one reference per test
+stack: Turborepo, Vitest, Playwright and `node --test`. Its templates go into
+a project's scripts folder, and the project owns them:
+
+- `verify.mjs`, with `--affected` and `--base <ref>`;
+- the scope rules, and a guard test that fails when a test reads a file in
+  another package with no entry that runs it;
+- a machine-wide lock, so only one heavy job runs at a time;
+- a record of a pass on a clean tree, so a merge step skips a second run.
+
+### openspec-migrate
+
+A temporary skill that moves one repo at a time to OpenSpec 2.1 skills that
+stay in the repo. Only you start it, because it deletes files and commits.
+
+```
+/openspec-migrate status
+/openspec-migrate
+```
+
+`status` lists the skills' version and scope, the git state and the
+spec-checks opt-in of each repo under `~/dev`. In a repo, the skill finds the
+repo's own edits to its skills, asks where each one goes, upgrades the skills,
+checks the repo and commits on a branch. When every repo is on 2.1, the global
+skills are installed and this skill is deleted. Global skills come last,
+because a skill in `~/.claude/skills/` overrides a project skill with the same
+name.
+
+`install.sh` checks that the `openspec` CLI is the pinned version, 2.1.0, and
+prints the upgrade command if not. It never runs `openspec init`.
 
 ## Output styles
 
