@@ -1,15 +1,28 @@
 # fstack
 
-Forsmark's Claude Code stack: plugins, skills, output styles and global
-instructions. The repository is also a plugin marketplace, named `fstack`.
+Forsmark's Claude Code setup: plugins, skills, an output style and global
+instructions. The repository is also a plugin marketplace named `fstack`.
+
+- [Layout](#layout)
+- [Install](#install)
+- [Plugins](#plugins)
+- [Skills](#skills)
+- [Output styles](#output-styles)
+- [Global instructions](#global-instructions)
+- [Add to the stack](#add-to-the-stack)
+- [For agents](#for-agents)
+
+## Layout
 
 ```
-plugins/        function-hook plugins (mods), installed from the fstack marketplace
+plugins/        plugins, installed from the fstack marketplace
 skills/         skills, linked into ~/.claude/skills/
 output-styles/  output styles, linked into ~/.claude/output-styles/
 global/         CLAUDE.md, linked to ~/.claude/CLAUDE.md
 install.sh      links and installs all of the above
 ```
+
+Each plugin and skill has a README in its own folder.
 
 ## Install
 
@@ -19,383 +32,126 @@ git clone https://github.com/forsmark/fstack.git ~/dev/fstack
 ```
 
 The script links each skill, output style and the global `CLAUDE.md` into
-`~/.claude/`, and moves a file that stands in the way to `<name>.bak.<time>`.
-It adds the folder as the `fstack` marketplace and installs every plugin at
-user scope. Run it again after you add a skill or a plugin: what is in place
-stays as it is.
+`~/.claude/`. A file in the way moves to `<name>.bak.<time>`. The script then
+adds the folder as the `fstack` marketplace and installs every plugin at user
+scope. It also checks the `openspec` CLI version. Run it again after you add a
+skill or a plugin. What is in place stays as it is.
 
-Because everything is linked or read from the folder, an edit applies at once
-for skills, output styles and `CLAUDE.md`, and on `/reload-plugins` for
-plugins.
+Skills, output styles and `CLAUDE.md` are links, so an edit to them applies
+at once. A plugin picks up an edit after `/reload-plugins`.
 
-One plugin alone, from GitHub without a checkout:
+To install one plugin from GitHub, without a checkout:
 
 ```
 /plugin install cache-warmer --marketplace forsmark/fstack
 ```
 
-This is a private repository: installing from GitHub needs read access and a
-git credential for github.com on the machine (an SSH key, or `gh auth login`
-then `gh auth setup-git`).
-
-## Adding to the stack
-
-- A plugin goes in `plugins/<name>/` and gets an entry in
-  `.claude-plugin/marketplace.json`.
-- A skill goes in `skills/<name>/SKILL.md`.
-- An output style goes in `output-styles/<name>.md`.
-
-Then run `install.sh`.
+The repository is private. Installing from GitHub needs read access and a git
+credential for github.com: an SSH key, or `gh auth login` then
+`gh auth setup-git`.
 
 ## Plugins
 
-### cache-warmer
-
-Keeps an idle session's 1-hour prompt cache warm. When the main loop finishes a
-turn, a 55-minute timer starts. If you haven't sent anything when it fires, the
-mod runs `$.model.fork`: the session's own last request is sent again with a
-one-line "reply ok" prompt after it. Because the prefix is identical, the API
-serves it from cache, which resets the cache TTL. Nothing is added to the
-transcript and your prompt box is never touched.
-
-- Sending a prompt cancels the timer.
-- At most 8 pings in a row (about 7.3 hours idle), then it stops.
-- If a ping reads nothing from cache (the entry had already lapsed, or the
-  session uses the 5-minute TTL), it stops instead of paying to rebuild.
-- The status line shows `cache-warmer: kept warm n/8 (<k> cached tokens)`.
-
-Each ping costs a cache read of the whole context (about 10% of base input
-price) plus a few output tokens, and counts against plan usage.
-
-Tune `IDLE_MS` and `MAX_PINGS` at the top of `plugins/cache-warmer/hooks/register.ts`.
-
-### email-guard
-
-Blocks any tool call that would put a personal email address into an outgoing
-request header. Claude gets an error that tells it to retry without the
-address, and you see a toast.
-
-It checks two kinds of tool call:
-
-- Shell commands (Bash, PowerShell): a word holding the address that is a
-  header value. That is the word after `-H`, `--header`, `-A`,
-  `--user-agent`, `-e`, `--referer`, `-U` or `-b`, or the same flag joined to
-  it. It is also a `Name:value` item (httpie, xh), a `From: ...` header line,
-  or a word that names a header itself, such as a script's
-  `headers={'User-Agent': ...}` or `ketch config set user_agent ...`.
-- Every other tool, MCP tools included: a string holding the address under a
-  key that names a header, or a string that is a header line.
-
-The match ignores case and also finds `%40` for `@`. Using the address
-elsewhere, for example `git config user.email` or a Gmail search, is not
-blocked.
-
-What it cannot see: a header set through a shell variable
-(`UA="..."; curl -A "$UA"`), or one written into a script file that a later
-command runs.
-
-Edit the address list in `EMAILS` at the top of `plugins/email-guard/hooks/register.ts`.
-Run the tests with `claude plugin test email-guard`.
-
-### usage-limits
-
-Reads the 5-hour and the weekly usage window: the percentage used and the
-reset time of each. At 90% it tells Claude to write a handoff. It is the port
-of two shell scripts, `~/.claude/usage/limits.sh` and
-`~/.claude/hooks/handoff-at-90.sh`.
-
-The figure comes from the first source that has one:
-
-1. The engine's reading from the last API response of this session
-   (`$.session.usage()`). This costs no request.
-2. The file `~/.claude/usage/limits.json`, if its figure is under 5 minutes
-   old. Every session with the mod writes that file.
-3. The endpoint behind `/usage`. The engine sets the session's credential on
-   the request, so the mod never sees the token. The endpoint is undocumented,
-   and a Claude Code update may break it.
-
-If all three fail, a figure from the file that is under 15 minutes old still
-answers. Otherwise usage is `unknown`. The caller must then treat usage as
-unknown, never as low.
-
-The figure goes out three ways:
-
-- Claude calls the tool `mcp__usage-limits__read`. It answers one JSON line:
-
-  ```
-  {"five_hour":{"used_percentage":81,"resets_at":1794830400},"seven_day":{"used_percentage":52.5,"resets_at":1795141200},"checked_at":1794824263}
-  ```
-
-- The mod writes the same line to `~/.claude/usage/limits.json`. Shell hooks
-  and the status line script can read it.
-- When a window reaches 90%, Claude gets a hidden note that tells it to stop at
-  the next safe point and write a handoff. You see a toast. The note goes once
-  per window and period. When no figure exists, Claude is told once per session
-  that usage is unknown.
-
-The mod checks after each main-thread turn, when a window moves a whole point,
-and at each prompt. The check at a prompt does not delay the prompt.
-
-Cases it handles:
-
-- No reading before the first API response of a session: sources 2 and 3
-  answer at the first prompt.
-- A session that sat idle: a reading older than 5 minutes is checked against
-  the other sources, and one older than 15 minutes is dropped.
-- A window whose reset time passed: the figure describes a period that ended,
-  so the mod drops it.
-- Two sources that disagree: for the same period the higher figure wins,
-  because usage only rises inside a period. A later reset time wins over an
-  older period.
-- Reset times that differ by a second between API responses: times within 2
-  minutes count as the same period, so the handoff note is not sent twice.
-- A cache file that is malformed, half-written or dated in the future: ignored.
-- The endpoint fails, times out after 8 seconds, or the session has no
-  subscription login: no figure from it, and no second request for 60 seconds.
-
-Tune `THRESHOLD` and the time limits at the top of
-`plugins/usage-limits/hooks/register.ts`. Run the tests with
-`claude plugin test usage-limits`.
-
-### pocket
-
-A pocket for questions that Claude has for you while you are away. Claude puts
-a question in the pocket and continues with other work. You see that questions
-wait, open the pocket when you are ready, and answer. The answer reaches
-Claude as your own message, with the question attached.
-
-Each pocketed question holds what you need to answer it cold: the question in
-one sentence, the context, the options with what each leads to and the
-recommended one marked, what Claude does in the meantime, how urgent it is,
-when Claude asked, and what it relates to.
-
-What you see:
-
-- A row above the prompt, only while the pocket holds something:
-  `pocket: 3 open, 1 blocks work, oldest 4h`. Its `open` button opens the
-  pocket in a pane.
-- `/pocket` lists every question in full, with a button for each option and a
-  field for your own answer. In the terminal it also opens the pane, and the
-  row in the transcript is then one line. There the list is shown to you only. It goes in no request, so it costs no tokens.
-- On the phone and on the web, through Remote Control, `/pocket` prints the
-  list as plain text, with the command that answers each question. They show
-  no row above the prompt, no pane and no buttons. Claude reads that text
-  too, so a list from there costs the tokens of the questions it shows.
-- A question that blocks work also raises one notification when Claude
-  pockets it. There is no other reminder.
-
-How you answer:
-
-- Press an option, or type your own answer in the field.
-- Or type `/pocket 1 a` for option a of Q1, or `/pocket 1 keep them until
-  Monday` for your own answer. `/pocket 1` shows Q1 alone.
-- `/pocket` runs while a turn is in flight. An answer never interrupts the
-  turn: Claude gets it when the turn ends. Several answers go out together as
-  one message.
-
-What Claude gets is one line for each answer, as a user message:
-
-```
-Pocket answer Q1 "How many days do we keep a deleted record?": a, 100 days
-```
-
-Beside it Claude gets a note from the plugin with the record of each answered
-question, so it does not need to recall the question.
-
-What Claude calls:
-
-- `mcp__pocket__ask` pockets a question and returns its id. Its description
-  holds the rules: pocket a decision that is yours and can wait, decide the
-  rest itself, and do not repeat a pocketed question in later messages. One
-  rule tells Claude to end each status message with `Pocket: <n> open` while
-  questions wait, because the phone and the web show no other sign.
-- `mcp__pocket__update` changes a question or withdraws it with a reason. You
-  see a changed question as edited. A withdrawn question stays in the list
-  with its reason until you dismiss it, with its button or `/pocket dismiss`.
-- `mcp__pocket__list` lists the open questions.
-
-The tools never raise a permission prompt. Only the main session pockets
-questions: a subagent gets an error that tells it to return its question to
-its caller.
-
-Trust: Claude writes every text in a question, and only the answer has your
-authority. So no tool answers a question. An answer comes only from a button
-press, or from a `/pocket` command typed at the terminal or sent through
-Remote Control. A `/pocket` answer from any other origin is refused. Claude
-cannot tell the answer line from a message you typed, so this check is the
-whole protection.
-
-Questions live in `~/.claude/pocket/<project>/`, one JSON file each, so they
-survive a compaction and a restart. A closed question moves to `done/` there.
-After a compaction, and at the start of a session, Claude is told which
-questions are open. A second session in the same project sees the same
-questions. An answer goes to the session where you give it.
-
-What it does not do:
-
-- An answer does not reach Claude in the middle of a turn. It waits for the
-  turn to end.
-- A session shows a change that another session made only after its next turn
-  or its next `/pocket`.
-- Two sessions that pocket a question in the same instant can take the same
-  id. The later file then replaces the earlier one.
-- An answer that was not delivered goes out again only from the session that
-  took it. If that session never returns, read the answer from the file.
-- It has no view of what is running.
-
-Run the tests with `claude plugin test pocket`.
-
-### image-preview
-
-Shows images from tool results inline in the terminal transcript, under the
-tool row. The web and mobile clients already show these images. This mod
-draws them in the terminal client too.
-
-It finds images in these results:
-
-- The Read tool on an image file.
-- MCP tools that return image blocks, such as browser screenshots.
-- Bash output that Claude Code marks as an image.
-- Reads that the transcript folds into one count line ("Read 2 files"). The
-  images go under that line.
-
-Requirements:
-
-- A terminal with the kitty graphics protocol: kitty or Ghostty. iTerm2 3.5
-  and later works in fullscreen rendering. Elsewhere the mod shows a dim line
-  such as `[png image 640x360]`.
-- PNG images need nothing more. JPEG, GIF, WebP and PNG files over 2 MiB need
-  `python3` with Pillow, which converts them to PNG.
-
-Inside a multiplexer such as herdr, Claude Code does not detect image support:
-it allows images only when the terminal reports itself as `kitty` or
-`ghostty`. Set `CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1` before Claude Code starts
-to skip that check. For herdr, in `~/.zshrc`:
-
-```
-[[ $TERM_PROGRAM == herdr ]] && export CLAUDE_CODE_FORCE_TERMINAL_IMAGES=1
-```
-
-This variable comes from the Claude Code binary, not its documentation, so a
-later release can change it.
-
-`/image-previews off` and `/image-previews on` turn the previews off and on.
-With no argument the command toggles. The setting persists across sessions.
-
-The constants at the top of `plugins/image-preview/hooks/register.tsx` set the largest
-preview (`MAX_COLUMNS`, `MAX_ROWS`) and the cell shape (`CELL_ASPECT`, cell
-height divided by cell width). If previews look stretched or squashed, change
-`CELL_ASPECT`.
-
-### spec-checks
-
-An OpenSpec working practice and the checks that hold specs to it. It has
-three parts:
-
-- The `practice` skill: how a change is proposed, applied and archived, how a
-  spec is written, how each scenario maps to a test, and how a sweep finds
-  specs that disagree. Each step's reference loads only at that step.
-- The `spec-checks` CLI, on the Bash PATH while the plugin is on.
-- A hook that runs `spec-checks validate` and `spec-checks dropped` after a
-  tool call that touches `openspec/specs`. On a failure, Claude gets the
-  problems.
-
-All three do nothing in a project without `openspec/checks.json`. That file
-is the opt-in, and the `openspec-migrate` skill offers it.
-
-The checks, which `spec-checks verify` runs in the order the config lists:
-
-| Check | Fails on |
+| Plugin | What it does |
 | --- | --- |
-| `validate` | an error from `openspec validate --specs --strict`, and a requirement over 500 characters |
-| `coverage` | a scenario with no test and no reason in the coverage map, or a changed scenario whose test did not change |
-| `shall` | a requirement with more SHALL sentences than scenarios |
-| `dropped` | a requirement that left a main spec without a REMOVED or RENAMED delta |
-| `repeated` | the same list in two specs |
-| `gate --check` | a rule dropped from a delta after a person approved the proposal |
-
-Each check compares with the merge base of HEAD and the first ref in
-`baseRefs`. A check's baseline lists the gaps a project had when it adopted
-the checks, and it only shrinks. In CI, a missing base is a failure, so the
-job needs `fetch-depth: 0`.
-
-The helpers are `gate <change>`, `claims <change>`, `preview <change>`,
-`sweep-groups`, `sweep-dismissed` and `vendor`. `spec-checks --help` lists
-them. `vendor` copies the CLI into the project at `tools/spec-checks/`, so CI
-runs it without the plugin. The hook runs that copy when there is one.
-
-The coverage check parses test files with the TypeScript compiler. It loads
-`typescript` from the project. The project templates are in
-`plugins/spec-checks/templates/`. Run the tests with
-`cd plugins/spec-checks && pnpm install && pnpm test`.
+| [cache-warmer](plugins/cache-warmer/README.md) | Keeps an idle session's 1-hour prompt cache warm with a cheap ping before it expires. |
+| [email-guard](plugins/email-guard/README.md) | Blocks a tool call that would put a personal email address into a request header. |
+| [usage-limits](plugins/usage-limits/README.md) | Reads the 5-hour and weekly usage windows, and tells Claude to write a handoff at 90%. |
+| [pocket](plugins/pocket/README.md) | Holds Claude's questions while you are away, so it can keep working. You answer when you are ready. |
+| [image-preview](plugins/image-preview/README.md) | Shows a preview of an image in the transcript. |
+| [spec-checks](plugins/spec-checks/README.md) | An OpenSpec working practice and the checks that hold specs to it, for projects that opt in. |
 
 ## Skills
 
-### humanize
-
-It audits and rewrites reader-facing
-copy (interface strings, pages, mails, release notes, errors) for writing that
-reads as generated. It reads a page or a mail whole. A pattern of generated
-writing counts only where it returns or shares its page with other findings.
-One pattern, once, can stay.
-
-```
-/humanize audit src/pages/signup
-/humanize rewrite mails/welcome.html
-```
-
-Audit is the default and changes nothing. A rewrite runs only on request. It
-removes the pattern and keeps every fact, number, link and condition, and it
-never rewrites legal text in place. Claude also reaches for the skill by itself
-when it writes copy.
-
-Each project states its own reader, voice, words, limits and legal text in
-`.claude/humanize.md`. The skill offers to write one from
-`references/profile-template.md`. For a whole site it follows the review method
-in `references/large-jobs.md`.
-
-### affected-tests
-
-Each subagent runs only the tests its changes can reach, and the full suite
-runs once per batch. The skill holds the rules and one reference per test
-stack: Turborepo, Vitest, Playwright and `node --test`. Its templates go into
-a project's scripts folder, and the project owns them:
-
-- `verify.mjs`, with `--affected` and `--base <ref>`;
-- the scope rules, and a guard test that fails when a test reads a file in
-  another package with no entry that runs it;
-- a machine-wide lock, so only one heavy job runs at a time;
-- a record of a pass on a clean tree, so a merge step skips a second run.
-
-### openspec-migrate
-
-A temporary skill that moves one repo at a time to OpenSpec 2.1 skills that
-stay in the repo. Only you start it, because it deletes files and commits.
-
-```
-/openspec-migrate status
-/openspec-migrate
-```
-
-`status` lists the skills' version and scope, the git state and the
-spec-checks opt-in of each repo under `~/dev`. In a repo, the skill finds the
-repo's own edits to its skills, asks where each one goes, upgrades the skills,
-checks the repo and commits on a branch. When every repo is on 2.1, the global
-skills are installed and this skill is deleted. Global skills come last,
-because a skill in `~/.claude/skills/` overrides a project skill with the same
-name.
-
-`install.sh` checks that the `openspec` CLI is the pinned version, 2.1.0, and
-prints the upgrade command if not. It never runs `openspec init`.
+| Skill | What it does |
+| --- | --- |
+| [humanize](skills/humanize/README.md) | Audits or rewrites copy that people read, for writing that sounds machine-made. |
+| [affected-tests](skills/affected-tests/README.md) | Each subagent runs only the tests its changes can reach. The full suite runs once per batch. |
+| [new-project](skills/new-project/README.md) | Sets up a new project: git, AGENTS.md, a glossary, OpenSpec, the spec checks and affected tests. |
+| [openspec-migrate](skills/openspec-migrate/README.md) | Temporary. Moves one repo to OpenSpec 2.1 skills. |
 
 ## Output styles
 
-### simple-technical
-
-Plain, single-meaning prose that follows the structural rules of ASD-STE100
+[simple-technical](output-styles/simple-technical.md) makes Claude write
+plain prose with one meaning. It follows the sentence rules of ASD-STE100
 Simplified Technical English. Pick it with `/output-style`.
 
 ## Global instructions
 
-`global/CLAUDE.md` is linked to `~/.claude/CLAUDE.md`, the instructions every
-session loads. It tells Claude to use `ketch` for web search and fetching.
+[global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
+every session loads. It tells Claude to use `ketch` for web search and for
+fetching pages.
+
+## Add to the stack
+
+- A plugin goes in `plugins/<name>/`, with a README and an entry in
+  `.claude-plugin/marketplace.json`.
+- A skill goes in `skills/<name>/`, with a `SKILL.md` and a README.
+- An output style goes in `output-styles/<name>.md`.
+
+Then run `install.sh`.
+
+## For agents
+
+This section is for a Claude Code session that a user points at this
+repository with a request such as "I want this". Read it before you install
+anything.
+
+### Do not run install.sh as is
+
+`install.sh` installs everything, and it is personal to the owner:
+
+- It replaces the user's `~/.claude/CLAUDE.md` with a link to
+  `global/CLAUDE.md`. The old file moves to `CLAUDE.md.bak.<time>`.
+- It installs every plugin, and email-guard checks for the owner's addresses.
+- It warns when the `openspec` CLI is not version 2.1.0.
+
+Ask the user which parts they want. Then install those parts one by one, as
+the steps below show.
+
+### What each part needs
+
+| Part | Needs | Change before you install |
+| --- | --- | --- |
+| Mods: cache-warmer, email-guard, usage-limits, pocket, image-preview | A Claude Code build that loads mods. A mod is a plugin whose `hooks/hooks.json` names TypeScript modules under `"modules"`. | email-guard: the `EMAILS` list at the top of `plugins/email-guard/hooks/register.ts` |
+| spec-checks | Node 22 or later, the `openspec` CLI 2.1.0, git. The coverage check loads `typescript` from the project. | None |
+| humanize | Nothing | None |
+| affected-tests | Node 22 or later. The heavy lock needs `flock`, so it is Linux only. | None |
+| new-project | The spec-checks plugin, the affected-tests skill, the `openspec` CLI. `gh` only to create a GitHub repository. | None |
+| openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. Skip it. |
+| simple-technical | Nothing | None |
+| global/CLAUDE.md | `ketch` at `~/.local/bin/ketch` | Personal. Copy only the lines the user wants into their own `~/.claude/CLAUDE.md`. |
+
+### Install one part
+
+Clone the repository first. Use a path the user chooses, such as `~/dev/fstack`.
+
+A skill:
+
+```bash
+ln -s ~/dev/fstack/skills/<name> ~/.claude/skills/<name>
+```
+
+An output style:
+
+```bash
+ln -s ~/dev/fstack/output-styles/<name>.md ~/.claude/output-styles/<name>.md
+```
+
+A plugin:
+
+```bash
+claude plugin marketplace add ~/dev/fstack
+claude plugin install <name>@fstack --scope user
+```
+
+After a plugin install, the user runs `/reload-plugins` or starts a new
+session.
+
+### Check the result
+
+- A skill shows in `/skills`, or the user can start it as `/<name>`.
+- A plugin shows in `claude plugin list` as `<name>@fstack`.
+- For spec-checks: `spec-checks --help` prints its commands in a new session.
+  The plugin's `bin/` folder is on the Bash PATH only inside Claude Code.
+- For spec-checks development: `cd plugins/spec-checks && pnpm install && pnpm test`.
