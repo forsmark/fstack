@@ -46,10 +46,6 @@ To install one plugin from GitHub, without a checkout:
 /plugin install cache-warmer --marketplace forsmark/fstack
 ```
 
-The repository is private. Installing from GitHub needs read access and a git
-credential for github.com: an SSH key, or `gh auth login` then
-`gh auth setup-git`.
-
 ## Plugins
 
 | Plugin | What it does |
