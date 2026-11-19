@@ -1,7 +1,9 @@
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
-// Addresses that must never travel in a request header. Compared lowercased.
-const EMAILS = ['jane.doe@example.com']
+// The addresses that must never travel in a request header come from two
+// places outside the repo: the file below, one address per line, and the
+// global git user.email. Both are compared lowercased.
+const EMAILS_FILE = '.config/email-guard/emails'
 
 // A key, flag or word that names a header: User-Agent, From, Referer, Cookie,
 // Authorization, any X- header, or "header(s)" itself.
@@ -18,9 +20,29 @@ const HEADER_FLAG_JOINED = /^(-H|-A|-e|-U|-b)\S|^--(header|headers|user-agent|re
 // httpie and xh take a header as `Name:value` (`Name:=value` is a JSON field).
 const HEADER_ITEM = /^[A-Za-z][A-Za-z0-9-]*:(?!=)/
 
-export function hasEmail(text: string): boolean {
+// Lines of the file, with `#` comments and blank lines dropped.
+export function parseEmails(text: string): string[] {
+  return text
+    .split('\n')
+    .map(line => line.replace(/#.*/, '').trim().toLowerCase())
+    .filter(line => line.includes('@'))
+}
+
+async function loadEmails($: EngineInterface): Promise<string[]> {
+  const emails = new Set<string>()
+  const home = await $.env.get('HOME').catch(() => undefined)
+  if (home) {
+    const text = await $.fs.read(`${home}/${EMAILS_FILE}`).catch(() => '')
+    if (typeof text === 'string') for (const e of parseEmails(text)) emails.add(e)
+  }
+  const git = await $.process.run(['git', 'config', '--global', 'user.email'], { timeoutMs: 5000 }).catch(() => undefined)
+  if (git && git.exitCode === 0) for (const e of parseEmails(git.stdout)) emails.add(e)
+  return [...emails]
+}
+
+export function hasEmail(text: string, emails: readonly string[]): boolean {
   const t = text.toLowerCase().replace(/%40/g, '@')
-  return EMAILS.some(addr => t.includes(addr))
+  return emails.some(addr => t.includes(addr))
 }
 
 // Splits a shell command into words, honouring quotes and backslashes, and
@@ -61,11 +83,11 @@ export function shellWords(command: string): string[] {
 // A shell command leaks when a word holding the address is a header value:
 // after a header flag, joined to one, a `Name:value` item, or a word (or the
 // word before it) that names a header, as in a script's headers={...}.
-export function commandLeaks(command: string): boolean {
-  if (!hasEmail(command)) return false
+export function commandLeaks(command: string, emails: readonly string[]): boolean {
+  if (!hasEmail(command, emails)) return false
   const words = shellWords(command)
   return words.some((w, i) => {
-    if (!hasEmail(w)) return false
+    if (!hasEmail(w, emails)) return false
     const prev = words[i - 1] ?? ''
     return (
       HEADER_FLAG.test(prev) ||
@@ -80,14 +102,14 @@ export function commandLeaks(command: string): boolean {
 
 // Any other tool (MCP request tools and the like) leaks when a string holding
 // the address sits under a header-named key, or is itself a header line.
-export function inputLeaks(value: unknown, path: string[] = []): boolean {
+export function inputLeaks(value: unknown, emails: readonly string[], path: string[] = []): boolean {
   if (typeof value === 'string') {
-    if (!hasEmail(value)) return false
+    if (!hasEmail(value, emails)) return false
     return path.some(k => HEADER_WORD.test(k)) || HEADER_LINE.test(value)
   }
-  if (Array.isArray(value)) return value.some(v => inputLeaks(v, path))
+  if (Array.isArray(value)) return value.some(v => inputLeaks(v, emails, path))
   if (value !== null && typeof value === 'object') {
-    return Object.entries(value).some(([k, v]) => inputLeaks(v, [...path, k]))
+    return Object.entries(value).some(([k, v]) => inputLeaks(v, emails, [...path, k]))
   }
   return false
 }
@@ -95,10 +117,13 @@ export function inputLeaks(value: unknown, path: string[] = []): boolean {
 const RESERVED = new Set(['tool', 'tool_use_id', 'consent', 'agentId', 'requestMeta'])
 
 export const register: Register = on => {
-  on('tool.call', ($, e, next) => {
+  on('tool.call', async ($, e, next) => {
     const args = Object.fromEntries(Object.entries(e).filter(([k]) => !RESERVED.has(k)))
+    // Most calls hold no address at all. Only the others read the address list.
+    if (!/@|%40/i.test(JSON.stringify(args))) return next(e)
+    const emails = await loadEmails($)
     const command = (e.tool === 'Bash' || e.tool === 'PowerShell') && typeof args.command === 'string' ? args.command : undefined
-    const leaks = command !== undefined ? commandLeaks(command) : inputLeaks(args)
+    const leaks = command !== undefined ? commandLeaks(command, emails) : inputLeaks(args, emails)
     if (!leaks) return next(e)
 
     $.ui.toast(`email-guard: blocked ${e.tool}: personal email in a request header`)

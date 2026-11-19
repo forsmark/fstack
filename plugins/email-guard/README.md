@@ -23,5 +23,11 @@ What it cannot see: a header set through a shell variable
 (`UA="..."; curl -A "$UA"`), or one written into a script file that a later
 command runs.
 
-Edit the address list in `EMAILS` at the top of `plugins/email-guard/hooks/register.ts`.
-Run the tests with `claude plugin test email-guard`.
+The addresses come from two places outside the repo:
+
+- `~/.config/email-guard/emails`, one address per line. A `#` starts a
+  comment.
+- The global git `user.email`.
+
+With neither one set, the guard blocks nothing. Run the tests with
+`claude plugin test plugins/email-guard` from the repo root.

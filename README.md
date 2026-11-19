@@ -103,7 +103,7 @@ anything.
 
 - It replaces the user's `~/.claude/CLAUDE.md` with a link to
   `global/CLAUDE.md`. The old file moves to `CLAUDE.md.bak.<time>`.
-- It installs every plugin, and email-guard checks for the owner's addresses.
+- It installs every plugin, including the mods, which need a Claude Code build that loads mods.
 - It warns when the `openspec` CLI is not version 2.1.0.
 
 Ask the user which parts they want. Then install those parts one by one, as
@@ -113,7 +113,7 @@ the steps below show.
 
 | Part | Needs | Change before you install |
 | --- | --- | --- |
-| Mods: cache-warmer, email-guard, usage-limits, pocket, image-preview | A Claude Code build that loads mods. A mod is a plugin whose `hooks/hooks.json` names TypeScript modules under `"modules"`. | email-guard: the `EMAILS` list at the top of `plugins/email-guard/hooks/register.ts` |
+| Mods: cache-warmer, email-guard, usage-limits, pocket, image-preview | A Claude Code build that loads mods. A mod is a plugin whose `hooks/hooks.json` names TypeScript modules under `"modules"`. | email-guard: put the user's addresses in `~/.config/email-guard/emails`, one per line. Without the file it guards the global git `user.email`. |
 | spec-checks | Node 22 or later, the `openspec` CLI 2.1.0, git. The coverage check loads `typescript` from the project. | None |
 | humanize | Nothing | None |
 | affected-tests | Node 22 or later. The heavy lock needs `flock`, so it is Linux only. | None |

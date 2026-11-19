@@ -1,6 +1,18 @@
 import { expect, test } from 'claude-code/testing'
 
 const EMAIL = 'jane.doe@example.com'
+const GIT_EMAIL = 'jdoe@example.org'
+
+type On = Parameters<Parameters<typeof test>[1]>[1]
+
+// Stubs the two address sources: the file under HOME, and git's user.email.
+function sources(on: On, file: string | undefined, git: string | undefined) {
+  on('env.get', () => ({ value: '/home/test' }))
+  on('fs.read', () => (file === undefined ? { deny: 'no such file' } : { value: file }))
+  on('process.run', () => ({ value: { exitCode: git === undefined ? 1 : 0, stdout: git ?? '', stderr: '' } }))
+  on('tool.call', () => ({ result: {} }))
+  on('ui.toast', () => ({ value: undefined }))
+}
 
 const BLOCKED: Record<string, unknown>[] = [
   { tool: 'Bash', command: `curl -H "User-Agent: myapp/1.0 (${EMAIL})" https://nominatim.openstreetmap.org/search?q=x` },
@@ -27,8 +39,7 @@ const ALLOWED: Record<string, unknown>[] = [
 ]
 
 test('calls that put the address in a header are denied', async ($, on) => {
-  on('tool.call', () => ({ result: {} }))
-  on('ui.toast', () => ({ value: undefined }))
+  sources(on, `# mine\n${EMAIL}\n`, undefined)
   for (const input of BLOCKED) {
     const r = await $.tool.call(input as never)
     expect(r.deny, JSON.stringify(input)).toContain('email-guard')
@@ -36,10 +47,21 @@ test('calls that put the address in a header are denied', async ($, on) => {
 })
 
 test('other calls run', async ($, on) => {
-  on('tool.call', () => ({ result: {} }))
-  on('ui.toast', () => ({ value: undefined }))
+  sources(on, `${EMAIL}\n`, undefined)
   for (const input of ALLOWED) {
     const r = await $.tool.call(input as never)
     expect(r.deny, JSON.stringify(input)).toBeUndefined()
   }
+})
+
+test('the global git user.email is guarded without a file', async ($, on) => {
+  sources(on, undefined, `${GIT_EMAIL}\n`)
+  const r = await $.tool.call({ tool: 'Bash', command: `curl -A 'bot ${GIT_EMAIL}' https://example.com` } as never)
+  expect(r.deny).toContain('email-guard')
+})
+
+test('with no address source, nothing is blocked', async ($, on) => {
+  sources(on, undefined, undefined)
+  const r = await $.tool.call({ tool: 'Bash', command: `curl -A 'bot ${EMAIL}' https://example.com` } as never)
+  expect(r.deny).toBeUndefined()
 })
