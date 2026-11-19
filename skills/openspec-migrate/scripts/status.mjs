@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * The OpenSpec state of every repo under a folder: which skills it has, their
- * version and scope, its git state, and whether it opted in to spec-checks.
- * It keeps no list of its own: the repos are the record.
+ * The OpenSpec state of one repo: which skills it has, their version and scope,
+ * its git state, and whether it opted in to spec-checks. Also the machine's CLI
+ * version and global skills. It keeps no list of repos.
  *
- *   node status.mjs [<folder>]     the default folder is ~/dev
+ *   node status.mjs [<repo>]     the default repo is the current folder
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const SKILL_PREFIX = 'openspec-';
 
@@ -74,11 +74,8 @@ function repoState(repo) {
 const migrated = (state) =>
   state.skills.length === 1 && state.skills[0] === '2.x' && state.layout === 'linked to .agents/skills' && state.skillsScope === 'project';
 
-const root = process.argv[2] ?? join(homedir(), 'dev');
-const repos = readdirSync(root)
-  .map((name) => join(root, name))
-  .filter((path) => existsSync(join(path, 'openspec')))
-  .sort();
+const start = resolve(process.argv[2] ?? process.cwd());
+const repo = git(start, ['rev-parse', '--show-toplevel']) ?? start;
 
 const globalSkills = [
   ...new Set([...skillVersions(join(homedir(), '.agents', 'skills')), ...skillVersions(join(homedir(), '.claude', 'skills'))]),
@@ -87,15 +84,14 @@ const cli = spawnSync('openspec', ['--version'], { encoding: 'utf8' });
 console.log(`openspec CLI: ${cli.status === 0 ? cli.stdout.trim() : 'not on the PATH'}`);
 console.log(`global skills in ~/.agents/skills or ~/.claude/skills: ${globalSkills.length > 0 ? globalSkills.join(', ') : 'none'}`);
 console.log('');
-const states = repos.map(repoState);
-for (const state of states) {
-  const versions = [...new Set(state.skills)].join(', ') || 'none';
-  console.log(`${state.repo}${migrated(state) ? '   migrated' : ''}`);
-  console.log(`  skills: ${versions}, ${state.layout}, skillsScope ${state.skillsScope}`);
-  console.log(`  old /opsx command files: ${state.opsxCommands}`);
-  console.log(`  git: ${state.git}`);
-  console.log(`  spec-checks: ${state.checks ? 'openspec/checks.json' : 'not opted in'}`);
+if (!existsSync(join(repo, 'openspec'))) {
+  console.log(`${repo} has no openspec/ folder.`);
+  process.exit(0);
 }
-console.log('');
-const left = states.filter((state) => !migrated(state)).length;
-console.log(left === 0 ? 'Every repo is migrated. The last stage can start.' : `${left} of ${states.length} repos are not migrated yet.`);
+const state = repoState(repo);
+const versions = [...new Set(state.skills)].join(', ') || 'none';
+console.log(`${state.repo}: ${migrated(state) ? 'migrated' : 'not migrated'}`);
+console.log(`  skills: ${versions}, ${state.layout}, skillsScope ${state.skillsScope}`);
+console.log(`  old /opsx command files: ${state.opsxCommands}`);
+console.log(`  git: ${state.git}`);
+console.log(`  spec-checks: ${state.checks ? 'openspec/checks.json' : 'not opted in'}`);

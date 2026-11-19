@@ -1,20 +1,20 @@
 ---
 name: openspec-migrate
-description: Move one repo's OpenSpec skills to OpenSpec 2.1, or list where every repo stands. Temporary. Delete it when every repo is on 2.1 and the global skills are installed.
+description: Move this repo's OpenSpec skills to OpenSpec 2.1, or show where this repo stands. Temporary. Delete it once the global skills are installed.
 argument-hint: "[status]"
 disable-model-invocation: true
 ---
 
 # OpenSpec migrate
 
-This skill moves one repo at a time from OpenSpec 1.x skills to 2.1 skills that stay in the repo. Each repo moves when its owner chooses. The global skills come last, after every repo is on 2.1.
+This skill moves the repo it runs in from OpenSpec 1.x skills to 2.1 skills that stay in the repo. A repo moves when its owner works on it again. No list of repos exists, and none is needed.
 
-The global skills wait because a skill in `~/.claude/skills/` overrides a project skill with the same name. Installed early, they would replace the 1.x skills of every repo that has not moved yet.
+The global skills come last. A skill in `~/.claude/skills/` overrides a project skill with the same name. Installed early, they would replace the 1.x skills of a repo that has not moved yet. For a repo nobody works on any more, that does no harm.
 
 There are two modes:
 
-- `/openspec-migrate status` lists where every repo stands. It changes nothing.
-- `/openspec-migrate` in a repo migrates that repo. It deletes files and commits on a branch.
+- `/openspec-migrate status` shows where this repo and the machine stand. It changes nothing.
+- `/openspec-migrate` migrates this repo. It deletes files and commits on a branch.
 
 ## Status
 
@@ -24,9 +24,9 @@ Run the script and show its output as it prints it:
 node ~/.claude/skills/openspec-migrate/scripts/status.mjs
 ```
 
-It scans each folder under `~/dev` that has an `openspec/` folder. Pass another folder as its argument to scan there. It marks a repo `migrated` when the repo has 2.x skills in `.agents/skills/`, links to them from `.claude/skills/`, and `skillsScope: project`. OpenSpec 2.x skills carry no version line, so the script reads the `.agents/skills/.openspec-target` file that 2.x writes.
+It reads the repo in the current folder. Pass another folder as its argument to read that repo instead. It marks a repo `migrated` when the repo has 2.x skills in `.agents/skills/`, links to them from `.claude/skills/`, and `skillsScope: project`. OpenSpec 2.x skills carry no version line, so the script reads the `.agents/skills/.openspec-target` file that 2.x writes.
 
-When the script says every repo is migrated, say that the last stage can start, and list its steps from [the last stage](#the-last-stage). Do not start it.
+It also shows the CLI version and whether the global skills are installed. The owner decides when the last stage starts. Do not start it.
 
 ## Migrate one repo
 
@@ -102,8 +102,8 @@ Commit on the branch with a message that lists what moved where. Show `git show 
 
 ## The last stage
 
-When `status` shows every repo on 2.1, the owner runs these steps:
+The owner starts this stage when the repos they still work on are migrated. A repo left on 1.x then uses the global skills in place of its own. The owner runs these steps:
 
 1. Install the global skills from one repo: `openspec init --scope global --tools claude`. In that repo, the command also removes the repo's own skills at once. Commit the removed files there.
-2. Run the same command in each other repo, when its owner chooses, and commit the removed files. The global skills already override the repo copies, so this is not urgent. The command refuses to run while an edited `/opsx` command file is left in the repo.
+2. Run the same command in each other migrated repo, when its owner chooses, and commit the removed files. The global skills already override the repo copies, so this is not urgent. The command refuses to run while an edited `/opsx` command file is left in the repo.
 3. Delete this skill from fstack.
