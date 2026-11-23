@@ -27,6 +27,10 @@
     {
       "name": "spec-checks",
       "source": "./plugins/spec-checks"
+    },
+    {
+      "name": "ketch-first",
+      "source": "./plugins/ketch-first"
     }
   ]
 }

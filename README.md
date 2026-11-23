@@ -55,6 +55,7 @@ To install one plugin from GitHub, without a checkout:
 | [usage-limits](plugins/usage-limits/README.md) | Reads the 5-hour and weekly usage windows, and tells Claude to write a handoff at 90%. |
 | [pocket](plugins/pocket/README.md) | Holds Claude's questions while you are away, so it can keep working. You answer when you are ready. |
 | [image-preview](plugins/image-preview/README.md) | Shows a preview of an image in the transcript. |
+| [ketch-first](plugins/ketch-first/README.md) | Answers WebSearch and WebFetch with the `ketch` CLI when it is installed. The built-in tool runs when ketch fails. |
 | [spec-checks](plugins/spec-checks/README.md) | An OpenSpec working practice and the checks that hold specs to it, for projects that opt in. |
 
 ## Skills
@@ -75,8 +76,8 @@ Simplified Technical English. Pick it with `/output-style`.
 ## Global instructions
 
 [global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
-every session loads. It tells Claude to use `ketch` for web search and for
-fetching pages.
+every session loads. It holds no rules at the moment. The ketch rules moved to
+the ketch-first plugin.
 
 ## Add to the stack
 
@@ -109,14 +110,14 @@ the steps below show.
 
 | Part | Needs | Change before you install |
 | --- | --- | --- |
-| Mods: cache-warmer, email-guard, usage-limits, pocket, image-preview | A Claude Code build that loads mods. A mod is a plugin whose `hooks/hooks.json` names TypeScript modules under `"modules"`. | email-guard: put the user's addresses in `~/.config/email-guard/emails`, one per line. Without the file it guards the global git `user.email`. |
+| Mods: cache-warmer, email-guard, usage-limits, pocket, image-preview, ketch-first | A Claude Code build that loads mods. A mod is a plugin whose `hooks/hooks.json` names TypeScript modules under `"modules"`. | email-guard: put the user's addresses in `~/.config/email-guard/emails`, one per line. Without the file it guards the global git `user.email`. ketch-first: nothing. It does nothing without `ketch`. |
 | spec-checks | Node 22 or later, the `openspec` CLI 2.1.0, git. The coverage check loads `typescript` from the project. | None |
 | humanize | Nothing | None |
 | affected-tests | Node 22 or later. The heavy lock needs `flock`, so it is Linux only. | None |
 | new-project | The spec-checks plugin, the affected-tests skill, the `openspec` CLI. `gh` only to create a GitHub repository. | None |
 | openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. Skip it. |
 | simple-technical | Nothing | None |
-| global/CLAUDE.md | `ketch` at `~/.local/bin/ketch` | Personal. Copy only the lines the user wants into their own `~/.claude/CLAUDE.md`. |
+| global/CLAUDE.md | Nothing | Empty at the moment. Skip it. |
 
 ### Install one part
 

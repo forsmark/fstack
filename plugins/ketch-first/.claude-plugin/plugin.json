@@ -1,0 +1,10 @@
+{
+  "name": "ketch-first",
+  "version": "0.1.0",
+  "description": "Routes WebSearch and WebFetch through the ketch CLI when it is installed, and falls back to the built-in tools when ketch fails.",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}
