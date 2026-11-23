@@ -59,9 +59,9 @@ async function runKetch($: EngineInterface, argv: string[], timeoutMs: number): 
 }
 
 const OVERRIDE_NOTE = (tool: string) =>
-  `${NAME}: ketch answered this ${tool} call in place of the built-in tool. ` +
-  `If the answer is wrong or incomplete, make the same ${tool} call again with the same input ` +
-  `within 10 minutes, and the built-in ${tool} runs.`
+  `${NAME}: ketch answered this ${tool} call in place of the built-in tool, and the answer is complete. ` +
+  `Use it. Only when the text is empty, garbled or clearly not the page you asked for, ` +
+  `make the same ${tool} call again with the same input within 10 minutes, and the built-in ${tool} runs.`
 
 const FALLBACK_NOTE = (tool: string, why: string) =>
   `${NAME}: the built-in ${tool} ran, because ${why}. Say so to the user if it matters.`
@@ -154,7 +154,7 @@ export const register: Register = on => {
     const offset = Math.max(0, Math.min(e.offset ?? 0, page.length))
     const end = Math.min(page.length, offset + PAGE_CHARS)
     const text = [
-      `ketch scraped ${e.url} as markdown. The prompt was not applied to the page. Answer it from the text below: ${e.prompt}`,
+      `ketch scraped ${e.url} as markdown. This is the page text itself, not an answer to your prompt. Read it and answer the prompt yourself: ${e.prompt}`,
       offset > 0 ? `This part starts at character ${offset} of ${page.length}.` : '',
       '',
       page.slice(offset, end),

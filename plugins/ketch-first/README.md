@@ -23,8 +23,9 @@ the built-in tool runs. Claude gets a note that says why. The time limit is
 ## Overrides
 
 - **Claude:** after a ketch answer, the same call with the same input within
-  10 minutes runs the built-in tool. Claude is told this with each ketch
-  answer.
+  10 minutes runs the built-in tool. Each ketch answer tells Claude to use it,
+  and to repeat the call only when the text is empty, garbled or the wrong
+  page.
 - **You, for one session:** `/ketch-first off` and `/ketch-first on`.
   `/ketch-first` alone shows the state.
 - **You, from the start:** set `KETCH_FIRST=off` in the environment.
