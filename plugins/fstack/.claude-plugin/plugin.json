@@ -1,0 +1,9 @@
+{
+  "name": "fstack",
+  "version": "0.1.0",
+  "description": "The fstack skills: humanize, affected-tests, new-project and openspec-migrate, run as /fstack:<skill>",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT"
+}

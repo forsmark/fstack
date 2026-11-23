@@ -5,12 +5,12 @@ stay in the repo. A repo moves when you work on it again. The skill keeps no
 list of repos. Only you start it, because it deletes files and commits.
 
 ```
-/openspec-migrate status
-/openspec-migrate
+/fstack:openspec-migrate status
+/fstack:openspec-migrate
 ```
 
 `status` shows this repo's skill version and scope, its git state and its
-spec-checks opt-in, and the machine's CLI version. `/openspec-migrate` finds
+spec-checks opt-in, and the machine's CLI version. `/fstack:openspec-migrate` finds
 the repo's own edits to its skills, asks where each one goes, upgrades the
 skills, checks the repo and commits on a branch. When the repos you still work
 on are migrated, you install the global skills and delete this skill. Global

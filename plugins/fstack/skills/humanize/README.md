@@ -6,8 +6,8 @@ writing counts only where it returns or shares its page with other findings.
 One pattern, once, can stay.
 
 ```
-/humanize audit src/pages/signup
-/humanize rewrite mails/welcome.html
+/fstack:humanize audit src/pages/signup
+/fstack:humanize rewrite mails/welcome.html
 ```
 
 Audit is the default and changes nothing. A rewrite runs only on request. It

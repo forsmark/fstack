@@ -2,7 +2,8 @@
 # Installs fstack into Claude Code. Running it again changes nothing that is
 # already in place.
 #
-# - Links each skill in skills/ into ~/.claude/skills/.
+# - Removes the links that older versions made from ~/.claude/skills/ into
+#   skills/. The skills now ship in the fstack plugin, as /fstack:<skill>.
 # - Links each output style in output-styles/ into ~/.claude/output-styles/.
 # - Links global/CLAUDE.md to ~/.claude/CLAUDE.md.
 # - Adds this folder as the fstack plugin marketplace and installs each plugin
@@ -38,9 +39,14 @@ link() {
   echo "linked   $dst -> $src"
 }
 
-for dir in "$ROOT"/skills/*/; do
-  [ -f "$dir/SKILL.md" ] || continue
-  link "${dir%/}" "$CLAUDE_DIR/skills/$(basename "$dir")"
+for dst in "$CLAUDE_DIR"/skills/*; do
+  [ -L "$dst" ] || continue
+  case "$(readlink "$dst")" in
+    "$ROOT"/skills/*)
+      rm "$dst"
+      echo "removed  $dst, now in the fstack plugin"
+      ;;
+  esac
 done
 
 for file in "$ROOT"/output-styles/*.md; do

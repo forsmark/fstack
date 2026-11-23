@@ -16,7 +16,7 @@ instructions. The repository is also a plugin marketplace named `fstack`.
 
 ```
 plugins/        plugins, installed from the fstack marketplace
-skills/         skills, linked into ~/.claude/skills/
+plugins/fstack/ the fstack plugin, which holds the skills
 output-styles/  output styles, linked into ~/.claude/output-styles/
 global/         CLAUDE.md, linked to ~/.claude/CLAUDE.md
 install.sh      links and installs all of the above
@@ -31,14 +31,15 @@ git clone https://github.com/forsmark/fstack.git ~/dev/fstack
 ~/dev/fstack/install.sh
 ```
 
-The script links each skill, output style and the global `CLAUDE.md` into
+The script links each output style and the global `CLAUDE.md` into
 `~/.claude/`. A file in the way moves to `<name>.bak.<time>`. The script then
 adds the folder as the `fstack` marketplace and installs every plugin at user
-scope. It also checks the `openspec` CLI version. Run it again after you add a
-skill or a plugin. What is in place stays as it is.
+scope, the `fstack` plugin with the skills included. It also checks the
+`openspec` CLI version. Run it again after you add a plugin. What is in place
+stays as it is.
 
-Skills, output styles and `CLAUDE.md` are links, so an edit to them applies
-at once. A plugin picks up an edit after `/reload-plugins`.
+Output styles and `CLAUDE.md` are links, so an edit to them applies at once.
+A plugin or a skill picks up an edit after `/reload-plugins`.
 
 To install one plugin from GitHub, without a checkout:
 
@@ -60,12 +61,15 @@ To install one plugin from GitHub, without a checkout:
 
 ## Skills
 
+The skills ship in the `fstack` plugin, so each one runs as
+`/fstack:<skill>`, such as `/fstack:humanize`.
+
 | Skill | What it does |
 | --- | --- |
-| [humanize](skills/humanize/README.md) | Audits or rewrites copy that people read, for writing that sounds machine-made. |
-| [affected-tests](skills/affected-tests/README.md) | Each subagent runs only the tests its changes can reach. The full suite runs once per batch. |
-| [new-project](skills/new-project/README.md) | Sets up a new project: git, AGENTS.md, a glossary, OpenSpec, the spec checks and affected tests. |
-| [openspec-migrate](skills/openspec-migrate/README.md) | Temporary. Moves one repo to OpenSpec 2.1 skills. |
+| [humanize](plugins/fstack/skills/humanize/README.md) | Audits or rewrites copy that people read, for writing that sounds machine-made. |
+| [affected-tests](plugins/fstack/skills/affected-tests/README.md) | Each subagent runs only the tests its changes can reach. The full suite runs once per batch. |
+| [new-project](plugins/fstack/skills/new-project/README.md) | Sets up a new project: git, AGENTS.md, a glossary, OpenSpec, the spec checks and affected tests. |
+| [openspec-migrate](plugins/fstack/skills/openspec-migrate/README.md) | Temporary. Moves one repo to OpenSpec 2.1 skills. |
 
 ## Output styles
 
@@ -83,7 +87,8 @@ the ketch-first plugin.
 
 - A plugin goes in `plugins/<name>/`, with a README and an entry in
   `.claude-plugin/marketplace.json`.
-- A skill goes in `skills/<name>/`, with a `SKILL.md` and a README.
+- A skill goes in `plugins/fstack/skills/<name>/`, with a `SKILL.md` and a
+  README.
 - An output style goes in `output-styles/<name>.md`.
 
 Then run `install.sh`.
@@ -114,8 +119,8 @@ the steps below show.
 | spec-checks | Node 22 or later, the `openspec` CLI 2.1.0, git. The coverage check loads `typescript` from the project. | None |
 | humanize | Nothing | None |
 | affected-tests | Node 22 or later. The heavy lock needs `flock`, so it is Linux only. | None |
-| new-project | The spec-checks plugin, the affected-tests skill, the `openspec` CLI. `gh` only to create a GitHub repository. | None |
-| openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. Skip it. |
+| new-project | The spec-checks plugin, the `openspec` CLI. `gh` only to create a GitHub repository. | None |
+| openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. It ships with the other skills, and only the user can start it. Leave it unused. |
 | simple-technical | Nothing | None |
 | global/CLAUDE.md | Nothing | Empty at the moment. Skip it. |
 
@@ -123,19 +128,13 @@ the steps below show.
 
 Clone the repository first. Use a path the user chooses, such as `~/dev/fstack`.
 
-A skill:
-
-```bash
-ln -s ~/dev/fstack/skills/<name> ~/.claude/skills/<name>
-```
-
 An output style:
 
 ```bash
 ln -s ~/dev/fstack/output-styles/<name>.md ~/.claude/output-styles/<name>.md
 ```
 
-A plugin:
+A plugin, or all the skills through the `fstack` plugin:
 
 ```bash
 claude plugin marketplace add ~/dev/fstack
@@ -147,7 +146,7 @@ session.
 
 ### Check the result
 
-- A skill shows in `/skills`, or the user can start it as `/<name>`.
+- A skill shows in `/skills`, and the user can start it as `/fstack:<name>`.
 - A plugin shows in `claude plugin list` as `<name>@fstack`.
 - For spec-checks: `spec-checks --help` prints its commands in a new session.
   The plugin's `bin/` folder is on the Bash PATH only inside Claude Code.

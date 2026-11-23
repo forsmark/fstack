@@ -13,15 +13,15 @@ The global skills come last. A skill in `~/.claude/skills/` overrides a project 
 
 There are two modes:
 
-- `/openspec-migrate status` shows where this repo and the machine stand. It changes nothing.
-- `/openspec-migrate` migrates this repo. It deletes files and commits on a branch.
+- `/fstack:openspec-migrate status` shows where this repo and the machine stand. It changes nothing.
+- `/fstack:openspec-migrate` migrates this repo. It deletes files and commits on a branch.
 
 ## Status
 
 Run the script and show its output as it prints it:
 
 ```bash
-node ~/.claude/skills/openspec-migrate/scripts/status.mjs
+node ${CLAUDE_SKILL_DIR}/scripts/status.mjs
 ```
 
 It reads the repo in the current folder. Pass another folder as its argument to read that repo instead. It marks a repo `migrated` when the repo has 2.x skills in `.agents/skills/`, links to them from `.claude/skills/`, and `skillsScope: project`. OpenSpec 2.x skills carry no version line, so the script reads the `.agents/skills/.openspec-target` file that 2.x writes.

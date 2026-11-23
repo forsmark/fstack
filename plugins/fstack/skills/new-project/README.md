@@ -3,7 +3,7 @@
 Sets up the agent layer of a new project. Only you start it:
 
 ```
-/new-project lendly
+/fstack:new-project lendly
 ```
 
 It asks for the folder, the purpose, the stack and the first domain words.

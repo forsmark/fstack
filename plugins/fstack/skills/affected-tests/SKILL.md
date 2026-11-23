@@ -60,7 +60,7 @@ A file that climbs to the repository root can read anything, and the guard canno
 2. Copy the templates into the project's scripts folder. The project owns the copies, and CI needs nothing from this skill.
 
    ```sh
-   cp -r <this skill>/templates/. scripts/
+   cp -r ${CLAUDE_SKILL_DIR}/templates/. scripts/
    ```
 
    | File | What it does |

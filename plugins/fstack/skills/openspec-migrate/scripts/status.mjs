@@ -13,7 +13,7 @@ import { join, resolve } from 'node:path';
 
 const SKILL_PREFIX = 'openspec-';
 
-/** This skill's own folder, which install.sh links into ~/.claude/skills. It is no OpenSpec skill. */
+/** This skill's name. An older install.sh linked it into ~/.claude/skills. It is no OpenSpec skill. */
 const OWN_NAME = 'openspec-migrate';
 
 /**

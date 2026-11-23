@@ -44,7 +44,6 @@ Ask the owner for these in one message. Offer a default where one is shown:
 - The folder does not exist, or it is empty. When it holds files, stop and ask. Never write into a folder that holds files.
 - `openspec --version` prints `2.1.0` or later.
 - `command -v spec-checks` finds the CLI. It is on the PATH while the spec-checks plugin is on.
-- The affected-tests skill is at `~/.claude/skills/affected-tests/`.
 
 ### 3. Make the repo
 
@@ -53,7 +52,7 @@ mkdir -p <folder> && cd <folder>
 git init -b main
 ```
 
-Copy `templates/gitignore` from this skill to `.gitignore`.
+Copy `${CLAUDE_SKILL_DIR}/templates/gitignore` to `.gitignore`.
 
 ### 4. Set up OpenSpec
 
@@ -83,7 +82,7 @@ context: |
 
 ### 5. Write the agent files
 
-Copy `templates/AGENTS.md`, `templates/CLAUDE.md` and `templates/GLOSSARY.md` from this skill to the project root. In `AGENTS.md`, replace `{{NAME}}`, `{{PURPOSE}}` and `{{STACK}}` with the owner's answers.
+Copy `AGENTS.md`, `CLAUDE.md` and `GLOSSARY.md` from `${CLAUDE_SKILL_DIR}/templates/` to the project root. In `AGENTS.md`, replace `{{NAME}}`, `{{PURPOSE}}` and `{{STACK}}` with the owner's answers.
 
 When the owner gave domain words, add each one to `GLOSSARY.md` as a line `**Term**:` and its definition on the next line. Leave the rest of the file as it is.
 
@@ -100,7 +99,7 @@ The spec-checks templates are in `$(dirname "$(dirname "$(command -v spec-checks
 
 ```bash
 mkdir -p scripts
-cp -r ~/.claude/skills/affected-tests/templates/. scripts/
+cp -r ${CLAUDE_PLUGIN_ROOT}/skills/affected-tests/templates/. scripts/
 ```
 
 Leave CONFIG in `scripts/verify.mjs` as it is. Do not add the spec checks to `CONFIG.checks`: the template's own end-to-end test runs verify in a copy without `tools/`, and fails on that command. AGENTS.md lists the spec checks as their own command. The first OpenSpec change fills in the lint, typecheck and test commands, because the stack does not exist yet. Until then the full `verify.mjs` stops at the test step.
