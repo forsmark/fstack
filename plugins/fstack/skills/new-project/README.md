@@ -11,6 +11,8 @@ Then it makes a git repo on `main` with these parts:
 
 - `AGENTS.md`, and a `CLAUDE.md` that imports it;
 - an empty `GLOSSARY.md`;
+- Backlog.md for the issues, with the `backlog:practice` skill named in
+  `AGENTS.md`;
 - OpenSpec, with project skills until the global skills exist;
 - the spec checks, opted in with empty baselines and a vendored CLI;
 - the affected-tests scripts.

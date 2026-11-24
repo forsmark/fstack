@@ -1,0 +1,9 @@
+{
+  "name": "backlog",
+  "private": true,
+  "type": "module",
+  "description": "The backlog plugin. The hook has no dependencies. The end-to-end tests need the backlog CLI on PATH, or BACKLOG_BIN set to it, and skip without it.",
+  "scripts": {
+    "test": "node --test 'test/*.test.mjs'"
+  }
+}

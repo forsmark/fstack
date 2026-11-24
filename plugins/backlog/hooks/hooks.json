@@ -1,0 +1,29 @@
+{
+  "description": "Copy an OpenSpec change's tasks.md into the plan of the Backlog.md task that the current task branch names, after a tool call that can have changed it. A failed call, such as a command with a failing test after the edit, counts too.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-sync.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/plan-sync.mjs\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

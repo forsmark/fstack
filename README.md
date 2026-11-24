@@ -35,7 +35,7 @@ The script links each output style and the global `CLAUDE.md` into
 `~/.claude/`. A file in the way moves to `<name>.bak.<time>`. The script then
 adds the folder as the `fstack` marketplace and installs every plugin at user
 scope, the `fstack` plugin with the skills included. It also checks the
-`openspec` CLI version. Run it again after you add a plugin. What is in place
+`openspec` and `backlog` CLI versions. Run it again after you add a plugin. What is in place
 stays as it is.
 
 Output styles and `CLAUDE.md` are links, so an edit to them applies at once.
@@ -58,6 +58,7 @@ To install one plugin from GitHub, without a checkout:
 | [image-preview](plugins/image-preview/README.md) | Shows a preview of an image in the transcript. |
 | [ketch-first](plugins/ketch-first/README.md) | Answers WebSearch and WebFetch with the `ketch` CLI when it is installed. The built-in tool runs when ketch fails. |
 | [spec-checks](plugins/spec-checks/README.md) | An OpenSpec working practice and the checks that hold specs to it, for projects that opt in. |
+| [backlog](plugins/backlog/README.md) | The Backlog.md practice: a task branch claims a task across worktrees, and a hook copies an OpenSpec change's `tasks.md` into the plan of its task. |
 
 ## Skills
 
@@ -68,7 +69,7 @@ The skills ship in the `fstack` plugin, so each one runs as
 | --- | --- |
 | [humanize](plugins/fstack/skills/humanize/README.md) | Audits or rewrites copy that people read, for writing that sounds machine-made. |
 | [affected-tests](plugins/fstack/skills/affected-tests/README.md) | Each subagent runs only the tests its changes can reach. The full suite runs once per batch. |
-| [new-project](plugins/fstack/skills/new-project/README.md) | Sets up a new project: git, AGENTS.md, a glossary, OpenSpec, the spec checks and affected tests. |
+| [new-project](plugins/fstack/skills/new-project/README.md) | Sets up a new project: git, AGENTS.md, a glossary, Backlog.md, OpenSpec, the spec checks and affected tests. |
 | [openspec-migrate](plugins/fstack/skills/openspec-migrate/README.md) | Temporary. Moves one repo to OpenSpec 2.1 skills. |
 
 ## Output styles
@@ -106,7 +107,8 @@ anything.
 - It replaces the user's `~/.claude/CLAUDE.md` with a link to
   `global/CLAUDE.md`. The old file moves to `CLAUDE.md.bak.<time>`.
 - It installs every plugin, including the mods, which need a Claude Code build that loads mods.
-- It warns when the `openspec` CLI is not version 2.1.0.
+- It warns when the `openspec` CLI is not version 2.1.0, and when the
+  `backlog` CLI is not version 1.57.4.
 
 Ask the user which parts they want. Then install those parts one by one, as
 the steps below show.
@@ -119,7 +121,8 @@ the steps below show.
 | spec-checks | Node 22 or later, the `openspec` CLI 2.1.0, git. The coverage check loads `typescript` from the project. | None |
 | humanize | Nothing | None |
 | affected-tests | Node 22 or later. The heavy lock needs `flock`, so it is Linux only. | None |
-| new-project | The spec-checks plugin, the `openspec` CLI. `gh` only to create a GitHub repository. | None |
+| backlog | Node 22 or later, git, the `backlog` CLI (Backlog.md) 1.57.4: `npm i -g backlog.md@1.57.4`. | None |
+| new-project | The spec-checks and backlog plugins, the `openspec` CLI, the `backlog` CLI. `gh` only to create a GitHub repository. | None |
 | openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. It ships with the other skills, and only the user can start it. Leave it unused. |
 | simple-technical | Nothing | None |
 | global/CLAUDE.md | Nothing | Empty at the moment. Skip it. |
@@ -151,3 +154,5 @@ session.
 - For spec-checks: `spec-checks --help` prints its commands in a new session.
   The plugin's `bin/` folder is on the Bash PATH only inside Claude Code.
 - For spec-checks development: `cd plugins/spec-checks && pnpm install && pnpm test`.
+- For backlog development: `cd plugins/backlog && pnpm test`. The end-to-end
+  tests skip without the `backlog` CLI.

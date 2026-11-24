@@ -21,6 +21,14 @@ The specs in `openspec/specs/` say what the system does. A change to what a spec
 - The base branch is `main`. One change goes in one pull request, from proposal to archive.
 - A fix that makes the code do what a spec already says needs no change.
 
+## Issues
+
+The issues are Backlog.md tasks in `backlog/`. Load the skill `backlog:practice` before you file, take, hand out, finish or archive a task.
+
+- Worktrees go in `.claude/worktrees/`, one for each task branch. Git ignores that folder, and Claude Code makes its own worktrees there too.
+- A tool that scans the tree from the project root, such as a test runner, a linter or a formatter, skips `.claude/worktrees/`. Then it does not run the worktrees' copies of the code.
+- The owner reviews a plan that holds a product, architecture or workflow decision.
+
 ## Words
 
 `GLOSSARY.md` holds the domain words, and they are binding. Use its term, never a synonym. A change that brings a new concept adds its term to the glossary in the same change.

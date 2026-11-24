@@ -35,6 +35,10 @@
     {
       "name": "ketch-first",
       "source": "./plugins/ketch-first"
+    },
+    {
+      "name": "backlog",
+      "source": "./plugins/backlog"
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "backlog",
+  "version": "0.1.0",
+  "description": "The Backlog.md practice of this stack: a task branch claims a task across worktrees, a task can carry an OpenSpec change, and a hook copies the change's tasks.md into the task's plan",
+  "author": {
+    "name": "Marc Forsmark Nielsen"
+  },
+  "license": "MIT"
+}
