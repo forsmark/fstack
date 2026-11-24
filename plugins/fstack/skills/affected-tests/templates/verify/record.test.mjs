@@ -305,6 +305,9 @@ describe('verify.mjs', () => {
       const { status, out } = verify(['--affected', '--base', 'base']);
       assert.equal(status, 0, out);
       assert.match(out, /affected since base: packages\/core and their dependents\./);
+      // This follows the default CONFIG.testFiltered, which passes the filters in
+      // turbo's syntax. A project whose testFiltered does not pass them, such as
+      // one without turbo, checks here that its test command ran.
       assert.ok(out.includes(`--filter=...[${mergeBase}]`), out);
     } finally {
       git('checkout', '-q', 'main');

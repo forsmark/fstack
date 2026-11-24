@@ -25,6 +25,14 @@ const CONFIG = {
   /**
    * The checks that run before the tests, in order, on the whole repository.
    * The first that fails stops the run.
+   *
+   * pnpm 12 installs before it runs a script when package.json and the lockfile
+   * differ. That install rewrites pnpm-lock.yaml and node_modules, can need the
+   * network, and fails on a dependency that cannot be installed. A changed
+   * lockfile also leaves the tree dirty, so verify records no pass. A check or
+   * test that runs a script against a package.json the lockfile does not match,
+   * such as a test of a check that refuses a runtime dependency, runs
+   * ['pnpm', '--config.verify-deps-before-run=false', 'run', '<script>'].
    */
   checks: [
     // PROJECT: add the lint step, for example ['pnpm', 'turbo', 'run', 'lint'].
@@ -36,6 +44,8 @@ const CONFIG = {
    * The tests of the packages that the filters select. A filter is
    * `...[<commit>]` for the packages changed since that commit and their
    * dependents, or a package name. turbo and `pnpm --filter` read the same syntax.
+   * verify/record.test.mjs checks for this syntax. A project that passes no
+   * filters changes that check too.
    */
   testFiltered: (filters) => [
     'pnpm',
