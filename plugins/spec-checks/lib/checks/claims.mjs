@@ -34,11 +34,18 @@ const CLOSEST_REQUIREMENTS = 3;
 
 const read = (path) => readFileSync(path, 'utf8');
 
+/**
+ * Whether `folder` is a change's folder. OpenSpec writes `.openspec.yaml` in each
+ * one, and an older change has at least its delta specs. A change that sets
+ * skip_specs has no specs/ folder, so `.openspec.yaml` is what finds it.
+ */
+const isChange = (folder) => existsSync(join(folder, '.openspec.yaml')) || existsSync(join(folder, 'specs'));
+
 /** A change's folder from its name, its archived name, or a path. Null where none is found. */
 function changeFolder(root, name) {
   const changes = join(root, CHANGES);
-  if (existsSync(join(resolve(name), 'specs'))) return resolve(name);
-  if (existsSync(join(changes, name, 'specs'))) return join(changes, name);
+  if (isChange(resolve(name))) return resolve(name);
+  if (isChange(join(changes, name))) return join(changes, name);
   const archive = join(changes, 'archive');
   if (!existsSync(archive)) return null;
   const archived = readdirSync(archive)
@@ -98,9 +105,13 @@ function printClaimsWithRequirements(claims, sharing, all) {
 function printChange(ctx, name, all) {
   const folder = changeFolder(ctx.root, name);
   if (!folder) throw new Error(`no change named ${name} under ${CHANGES}`);
+  const deltas = existsSync(join(folder, 'specs')) ? specsIn(join(folder, 'specs')) : [];
+  if (deltas.length === 0) {
+    // A change with no delta specs, such as one that sets skip_specs, touches no requirement.
+    console.log(`${basename(folder)} has no delta specs, so it touches no requirement and no claim applies to it`);
+    return;
+  }
   const { terms, sentences, weight, claims } = load(ctx);
-  const deltas = specsIn(join(folder, 'specs'));
-  if (deltas.length === 0) throw new Error(`${name} has no delta specs`);
   const capabilities = deltas.map(({ capability }) => capability);
   const touched = deltas.flatMap(({ capability, text }) => touchedRequirements(capability, text));
   const deltaText = deltas

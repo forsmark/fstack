@@ -147,6 +147,21 @@ A Title's page SHALL show the number of Members holding it.
     assert.ok(!claims.includes('holds › A Member sees their own holds'));
   });
 
+  it('says a change with no delta specs touches no requirement, active or archived', (t) => {
+    repo.write({
+      'openspec/changes/set-up-the-stack/.openspec.yaml': 'schema: spec-driven\nskip_specs: true\n',
+      'openspec/changes/set-up-the-stack/proposal.md': '# Proposal\n',
+      'openspec/changes/archive/2026-11-24-add-lint/.openspec.yaml': 'schema: spec-driven\nskip_specs: true\n',
+    });
+    for (const name of ['set-up-the-stack', 'add-lint']) {
+      const logs = t.mock.method(console, 'log', () => {});
+      assert.equal(main(['claims', name, '--root', repo.root]), 0);
+      const stdout = logs.mock.calls.map((call) => call.arguments.join(' ')).join('\n');
+      logs.mock.restore();
+      assert.match(stdout, /has no delta specs, so it touches no requirement and no claim applies to it/);
+    }
+  });
+
   it('names a change it cannot find', (t) => {
     t.mock.method(console, 'log', () => {});
     const errors = t.mock.method(console, 'error', () => {});
