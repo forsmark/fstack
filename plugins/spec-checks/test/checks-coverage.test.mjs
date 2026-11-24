@@ -93,6 +93,41 @@ describe('the coverage check', () => {
     ]);
   });
 
+  it('passes an e2e entry that names a Vitest test under an adapter marked e2e', () => {
+    repo.checks({
+      coverage: {
+        mapDir: 'e2e/coverage',
+        adapters: [
+          { kind: 'vitest', roots: ['src'] },
+          { kind: 'vitest', roots: ['cli/e2e'], e2e: true },
+        ],
+      },
+    });
+    repo.write({
+      'cli/e2e/renew.test.ts': "it('renews a loan from the command line', () => {});\n",
+      'e2e/coverage/loans.json': `${JSON.stringify({
+        'A loan lasts three weeks': { 'A loan lasts three weeks holds': { unit: 'src/loans.test.ts › lasts three weeks' } },
+        'A loan is renewed once': {
+          'A loan is renewed once holds': { e2e: 'cli/e2e/renew.test.ts › renews a loan from the command line' },
+        },
+      })}\n`,
+    });
+    assert.deepEqual(check(), { problems: [], summary: '2 of 2 scenarios mapped, 0 not yet' });
+  });
+
+  it('takes a unit entry anywhere outside the end-to-end roots when no adapter holds unit tests', () => {
+    repo.checks({
+      coverage: {
+        mapDir: 'e2e/coverage',
+        adapters: [
+          { kind: 'playwright', roots: ['e2e/tests'] },
+          { kind: 'node-test', roots: ['cli/e2e'], e2e: true },
+        ],
+      },
+    });
+    assert.deepEqual(check(), { problems: [], summary: '2 of 2 scenarios mapped, 0 not yet' });
+  });
+
   it('fails a not-yet line the base did not have', () => {
     repo.write({
       'e2e/coverage/loans.json': map(null),
@@ -151,6 +186,24 @@ describe('loading TypeScript', () => {
     projectTypeScript('projectTypeScriptLoaded');
     assert.deepEqual(check().problems, []);
     assert.equal(globalThis.projectTypeScriptLoaded, true);
+  });
+
+  it('loads typescript for a map whose only test entries are e2e entries under a test runner', () => {
+    projectTypeScript('e2eRunnerTypeScriptLoaded');
+    repo.checks({
+      coverage: { mapDir: 'e2e/coverage', adapters: [{ kind: 'node-test', roots: ['cli/e2e'], e2e: true }] },
+    });
+    repo.write({
+      'cli/e2e/renew.test.ts': "it('renews a loan from the command line', () => {});\n",
+      'e2e/coverage/loans.json': `${JSON.stringify({
+        'A loan lasts three weeks': { 'A loan lasts three weeks holds': { none: 'the clock is the library system' } },
+        'A loan is renewed once': {
+          'A loan is renewed once holds': { e2e: 'cli/e2e/renew.test.ts › renews a loan from the command line' },
+        },
+      })}\n`,
+    });
+    assert.deepEqual(check().problems, []);
+    assert.equal(globalThis.e2eRunnerTypeScriptLoaded, true);
   });
 
   it("falls back to the plugin's typescript where the project has none", () => {

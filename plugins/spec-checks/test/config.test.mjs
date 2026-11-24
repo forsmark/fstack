@@ -61,6 +61,31 @@ describe('configProblems', () => {
     ]);
   });
 
+  it('takes "e2e" on a Vitest or node:test adapter, and names a wrong one', () => {
+    assert.deepEqual(problemsOf({ coverage: { adapters: [{ kind: 'node-test', roots: ['cli/e2e'], e2e: true }] } }), []);
+    assert.deepEqual(problemsOf({ coverage: { adapters: [{ kind: 'vitest', roots: ['src'], e2e: 'yes' }] } }), [
+      'the vitest adapter\'s "e2e" is true or false',
+    ]);
+    assert.deepEqual(problemsOf({ coverage: { adapters: [{ kind: 'playwright', roots: ['e2e/tests'], e2e: true }] } }), [
+      'the playwright adapter holds end-to-end tests already, so it takes no "e2e"',
+    ]);
+  });
+
+  it('names a root that an "e2e" adapter shares with another adapter, and takes a root inside another', () => {
+    const adapters = (unitRoots) => ({
+      coverage: {
+        adapters: [
+          { kind: 'vitest', roots: unitRoots },
+          { kind: 'node-test', roots: ['packages/cli/e2e'], e2e: true },
+        ],
+      },
+    });
+    assert.deepEqual(problemsOf(adapters(['packages'])), []);
+    assert.deepEqual(problemsOf(adapters(['./packages/cli/e2e/'])), [
+      'packages/cli/e2e is a root of an "e2e" adapter and of the vitest adapter. Give each root one kind of test',
+    ]);
+  });
+
   it('names adapters that are no list, and does not throw', () => {
     assert.ok(problemsOf({ coverage: { adapters: { kind: 'vitest' } } }).length > 0);
     assert.ok(problemsOf({ coverage: { adapters: [null] } }).length > 0);

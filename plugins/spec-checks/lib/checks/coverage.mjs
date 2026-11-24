@@ -50,9 +50,14 @@ function e2eFiles(root, adapters) {
     .sort();
 }
 
-const hasUnitEntry = (map) =>
+/** Whether the map names a test file the check must parse: a unit entry, or an e2e entry in a test runner's file. */
+const hasRunnerEntry = (map, e2eRoots) =>
   Object.values(map).some((requirements) =>
-    Object.values(requirements).some((entries) => Object.values(entries).some((entry) => entry?.unit !== undefined)),
+    Object.values(requirements).some((entries) =>
+      Object.values(entries).some(
+        (entry) => entry?.unit !== undefined || (e2eRoots.length > 0 && entry?.e2e !== undefined),
+      ),
+    ),
   );
 
 /**
@@ -97,8 +102,12 @@ export function run(ctx) {
   }
 
   const files = e2eFiles(ctx.root, adapters);
-  if (files.length > 0 || hasUnitEntry(map)) useTypeScript(loadTypeScript(ctx.root));
-  const unitAdapters = adapters.filter((adapter) => adapter.kind !== 'playwright');
+  // A Vitest or node:test adapter with "e2e": true holds end-to-end tests, such
+  // as tests that run a built CLI as a process. Its roots take e2e entries, not unit ones.
+  const runners = adapters.filter((adapter) => adapter.kind !== 'playwright');
+  const unitAdapters = runners.filter((adapter) => adapter.e2e !== true);
+  const e2eRoots = runners.filter((adapter) => adapter.e2e === true).flatMap((adapter) => adapter.roots);
+  if (files.length > 0 || hasRunnerEntry(map, e2eRoots)) useTypeScript(loadTypeScript(ctx.root));
   const notYet = readList(listPath);
   const base = baseOf(ctx);
   const problems = checkCoverage({
@@ -112,7 +121,10 @@ export function run(ctx) {
     base: base && baseOfMap(ctx.root, base, specs, map, mapDir),
     mapDir,
     listFile,
+    // With no unit adapter, a unit entry may name a file anywhere outside the end-to-end roots.
     unitRoots: unitAdapters.length > 0 ? unitAdapters.flatMap((adapter) => adapter.roots) : null,
+    e2eRoots,
+    playwrightRoots: adapters.filter((adapter) => adapter.kind === 'playwright').flatMap((adapter) => adapter.roots),
   });
   return {
     problems,

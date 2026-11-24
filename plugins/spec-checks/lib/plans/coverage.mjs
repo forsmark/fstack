@@ -114,9 +114,13 @@ const unitMatches = (paths, name) => {
  * - `scenarios`: every key in the main specs.
  * - `map`: capability → requirement → scenario → `{ e2e }`, `{ unit }` or `{ none }`.
  * - `notYet`, `baseNotYet`: the list's lines now, and at the branch's base or null.
- * - `tests`: what `readTests` read from every e2e file.
- * - `readUnit(file)`: a unit test file's text, or null where there is none.
+ * - `tests`: what `readTests` read from every Playwright file.
+ * - `readUnit(file)`: a test runner's file text, or null where there is none.
  * - `unitRoots`: the folders a unit entry's file must be under, or null for any.
+ * - `e2eRoots`: the folders of Vitest or node:test end-to-end tests. An e2e entry
+ *   whose file is under one names its test as a unit entry does, with no covers(…).
+ * - `playwrightRoots`: the folders of the Playwright tests.
+ *   The deepest of all these roots that holds a file says what kind of test it is.
  * - `mapDir`, `listFile`: where the map and the not-yet list are, for the messages.
  * - `texts`: every scenario's text now, as `scenarioTexts` reads it.
  * - `base`: `{ texts, map, changed }` at the branch's base, `changed`
@@ -134,6 +138,8 @@ export function checkCoverage({
   mapDir = MAP_DIR,
   listFile = NOT_YET_FILE,
   unitRoots = null,
+  e2eRoots = [],
+  playwrightRoots = [],
 }) {
   const problems = [];
   const known = new Set(scenarios);
@@ -172,7 +178,13 @@ export function checkCoverage({
   }
 
   for (const [key, entry] of mapped) {
-    const problem = entryProblem(entry, key, tests, readUnitTestsOf, unitRoots);
+    const problem = entryProblem(entry, key, {
+      tests,
+      unitTestsOf: readUnitTestsOf,
+      unitRoots,
+      e2eRoots,
+      playwrightRoots,
+    });
     if (problem) problems.push(`${key}: ${problem}`);
   }
 
@@ -238,8 +250,21 @@ function changedEntryProblem(entry, baseEntry, changed) {
   return `its text changed since the base, and ${file} did not. Update the test, or say in "checked" why it already shows the new text`;
 }
 
+/** A root as the map's paths spell it, with no leading `./` and no trailing `/`. */
+export const cleanRoot = (root) => root.replace(/^(?:\.\/)+/, '').replace(/\/+$/, '');
+
+/** How many folders deep the deepest of `roots` that holds `file` is, or -1 where none holds it. */
+const depthIn = (roots, file) =>
+  Math.max(
+    -1,
+    ...roots
+      .map(cleanRoot)
+      .filter((root) => file.startsWith(`${root}/`))
+      .map((root) => root.split('/').length),
+  );
+
 /** What is wrong with one entry, or null. */
-function entryProblem(entry, key, tests, unitTestsOf, unitRoots) {
+function entryProblem(entry, key, { tests, unitTestsOf, unitRoots, e2eRoots, playwrightRoots }) {
   const kind = kindOf(entry);
   if (!kind) {
     return 'an entry is one of {"e2e": …}, {"unit": …} or {"none": …}, with an optional "checked"';
@@ -247,14 +272,27 @@ function entryProblem(entry, key, tests, unitTestsOf, unitRoots) {
   if (entry.checked !== undefined && !hasReason(entry.checked)) return '"checked" needs a reason';
   if (kind === 'none') return hasReason(entry.none) ? null : '"none" needs a reason';
   const [file, title] = splitReference(String(entry[kind]));
+  // The deepest root that holds the file says what kind of test it is, so a
+  // root may sit inside another, as packages/cli/e2e inside packages.
+  const inE2eRunner =
+    depthIn(e2eRoots, file) > Math.max(depthIn(unitRoots ?? [], file), depthIn(playwrightRoots, file));
+  if (kind === 'e2e' && inE2eRunner) return runnerTestProblem(unitTestsOf, file, title);
   if (kind === 'e2e') {
     const test = tests.find((candidate) => candidate.file === file && candidate.title === title);
     if (!test) return `no test ${entry.e2e}`;
     return test.scenarios.includes(key) ? null : `${entry.e2e} does not name it in covers(…)`;
   }
-  if (unitRoots && !unitRoots.some((root) => file.startsWith(`${root.replace(/\/$/, '')}/`))) {
+  if (inE2eRunner) {
+    return `${file} is under an end-to-end test root in openspec/checks.json, so map it as {"e2e": …}`;
+  }
+  if (unitRoots && depthIn(unitRoots, file) < 0) {
     return `${file} is under no unit test root in openspec/checks.json: ${unitRoots.join(', ')}`;
   }
+  return runnerTestProblem(unitTestsOf, file, title);
+}
+
+/** What is wrong with a reference to one Vitest or node:test test, or null. */
+function runnerTestProblem(unitTestsOf, file, title) {
   const paths = unitTestsOf(file);
   if (paths === null) return `no file ${file}`;
   const matches = unitMatches(paths, title);

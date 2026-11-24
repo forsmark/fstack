@@ -209,6 +209,76 @@ describe('checkCoverage', () => {
     ]);
   });
 
+  it('reads an e2e entry under an end-to-end root as a test runner test, and refuses a unit entry there', () => {
+    const CLI = 'packages/cli/e2e/shelf.test.ts';
+    const readUnit = (file) =>
+      file === UNIT
+        ? "it('lets a guest browse the shelf', () => {})"
+        : file === CLI
+          ? "it('prints the shelf', () => {})"
+          : null;
+    const shelf = (entry) => ({
+      readUnit,
+      e2eRoots: ['packages/cli/e2e'],
+      tests: [],
+      map: {
+        holds: {
+          'The shelf': { 'One shelf': entry, 'A guest': { unit: `${UNIT} › lets a guest browse the shelf` } },
+          Suggestions: { 'A guest': { none: 'a guest has no card to keep a reading list on' } },
+        },
+      },
+    });
+    assert.deepEqual(check(shelf({ e2e: `${CLI} › prints the shelf` })), []);
+    assert.deepEqual(check(shelf({ e2e: `${CLI} › prints nothing` })), [
+      `${A}: ${CLI} has no test named "prints nothing"`,
+    ]);
+    assert.deepEqual(check(shelf({ unit: `${CLI} › prints the shelf` })), [
+      `${A}: ${CLI} is under an end-to-end test root in openspec/checks.json, so map it as {"e2e": …}`,
+    ]);
+    // Outside the end-to-end roots, an e2e entry still names a Playwright test.
+    assert.deepEqual(check(shelf({ e2e: `${E2E} › one shelf` })), [`${A}: no test ${E2E} › one shelf`]);
+  });
+
+  it('lets the deepest root that holds a file say what kind of test it is', () => {
+    const CLI = 'packages/cli/e2e/shelf.test.ts';
+    const readUnit = (file) =>
+      file === UNIT
+        ? "it('lets a guest browse the shelf', () => {})"
+        : file === CLI
+          ? "it('prints the shelf', () => {})"
+          : null;
+    const shelf = (entry, roots) => ({
+      readUnit,
+      ...roots,
+      map: {
+        holds: {
+          'The shelf': { 'One shelf': entry, 'A guest': { unit: `${UNIT} › lets a guest browse the shelf` } },
+          Suggestions: { 'A guest': { none: 'a guest has no card to keep a reading list on' } },
+        },
+      },
+    });
+    // An end-to-end root inside a unit root, written with ./ and a trailing slash.
+    const inside = { unitRoots: ['packages', 'apps'], e2eRoots: ['./packages/cli/e2e/'] };
+    assert.deepEqual(check(shelf({ e2e: `${CLI} › prints the shelf` }, inside)), []);
+    assert.deepEqual(check(shelf({ unit: `${CLI} › prints the shelf` }, inside)), [
+      `${A}: ${CLI} is under an end-to-end test root in openspec/checks.json, so map it as {"e2e": …}`,
+    ]);
+    // A unit root inside an end-to-end root.
+    assert.deepEqual(
+      check(shelf({ e2e: `${E2E} › one shelf` }, { unitRoots: ['./apps/web/src'], e2eRoots: ['apps'] })),
+      [],
+    );
+    // A Playwright root inside an end-to-end root: its tests still name their scenarios in covers(…).
+    const playwright = {
+      e2eRoots: ['e2e'],
+      playwrightRoots: ['e2e/tests'],
+      tests: [{ file: E2E, title: 'one shelf', scenarios: [] }],
+    };
+    assert.deepEqual(check(shelf({ e2e: `${E2E} › one shelf` }, playwright)), [
+      `${A}: ${E2E} › one shelf does not name it in covers(…)`,
+    ]);
+  });
+
   it('refuses a not-yet line the base did not have, and compares nothing without a base list', () => {
     assert.deepEqual(check({ baseNotYet: [D, A] }), []);
     assert.deepEqual(check({ baseNotYet: [] }), [

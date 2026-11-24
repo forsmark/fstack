@@ -16,7 +16,7 @@ The key holds all three names because scenario names repeat within a capability.
 
 An entry is exactly one of these:
 
-- **An end-to-end test.** `{"e2e": "<file> › <test title>"}`. The test names the key in a Playwright annotation, `covers('<key>')`. Write the title and the key as literal strings, so the check can read them without running the test.
+- **An end-to-end test.** `{"e2e": "<file> › <test title>"}`. The test names the key in a Playwright annotation, `covers('<key>')`. Write the title and the key as literal strings, so the check can read them without running the test. End-to-end tests that run in Vitest or node:test, such as tests that start a built CLI as a process, get an adapter of their own in `coverage.adapters` with `"e2e": true`, as `{ "kind": "vitest", "roots": ["cli/e2e"], "e2e": true }`. An e2e entry whose file is under that adapter's roots names its test the way a unit entry does, with no `covers(…)`. Map every test under those roots as `e2e`: the check refuses a `unit` entry there. A root may sit inside another adapter's root, as `packages/cli/e2e` inside `packages`, and the deepest root that holds a file says what kind of test it is.
 - **A unit test.** `{"unit": "<file> › <test name>"}`. Where two tests in the file share the name, name the test by its describe block: `<file> › <describe> › <test name>`.
 - **No test.** `{"none": "<reason>"}`, where the reason says why no test can show the scenario.
 

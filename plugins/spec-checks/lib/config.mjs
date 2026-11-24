@@ -4,6 +4,7 @@
  */
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { cleanRoot } from './plans/coverage.mjs';
 
 export const CONFIG_FILE = 'openspec/checks.json';
 
@@ -64,6 +65,20 @@ export function configProblems(config) {
     if (!isList(adapter.roots) || adapter.roots.length === 0) {
       problems.push(`the ${adapter.kind} adapter needs "roots", a list of folders`);
     }
+    if (adapter.e2e !== undefined && typeof adapter.e2e !== 'boolean') {
+      problems.push(`the ${adapter.kind} adapter's "e2e" is true or false`);
+    } else if (adapter.e2e === true && adapter.kind === 'playwright') {
+      problems.push('the playwright adapter holds end-to-end tests already, so it takes no "e2e"');
+    }
+  }
+  // A root may sit inside another, and the deepest one decides. The same root
+  // for end-to-end tests and for other tests leaves nothing to decide.
+  const valid = (Array.isArray(adapters) ? adapters : []).filter((adapter) => adapter && isList(adapter.roots));
+  const isE2eRunner = (adapter) => adapter.e2e === true && adapter.kind !== 'playwright';
+  const others = valid.filter((adapter) => !isE2eRunner(adapter));
+  for (const root of valid.filter(isE2eRunner).flatMap((adapter) => adapter.roots)) {
+    const other = others.find((adapter) => adapter.roots.some((each) => cleanRoot(each) === cleanRoot(root)));
+    if (other) problems.push(`${root} is a root of an "e2e" adapter and of the ${other.kind} adapter. Give each root one kind of test`);
   }
   const groups = config.sweep.groups ?? {};
   if (typeof groups !== 'object' || Array.isArray(groups)) problems.push('"sweep.groups" maps a group name to a list of capabilities');
