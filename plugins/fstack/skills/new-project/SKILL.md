@@ -142,7 +142,10 @@ The spec checks say "no base" until `origin/main` exists. That is expected.
 ```bash
 git add -A
 git commit -m "Set up the project"
+git status --short --ignored
 ```
+
+The last command shows each file that `.gitignore` hides, on a `!!` line. A file this skill wrote never shows there. When one does, fix the pattern in `.gitignore`, commit again, and report it to the owner, because the template needs the same fix. A file the skill did not write, such as `.DS_Store`, stays ignored.
 
 Show `git show --stat HEAD`.
 

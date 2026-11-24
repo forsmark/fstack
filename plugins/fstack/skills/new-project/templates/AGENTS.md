@@ -29,6 +29,10 @@ The issues are Backlog.md tasks in `backlog/`. Load the skill `backlog:practice`
 - A tool that scans the tree from the project root, such as a test runner, a linter or a formatter, skips `.claude/worktrees/`. Then it does not run the worktrees' copies of the code.
 - The owner reviews a plan that holds a product, architecture or workflow decision.
 
+## Characters in code
+
+Write an invisible or look-alike character in code as a braced escape, such as `'\u{2028}'`, and in a regex with the `u` flag. The tool call that writes a file can turn a four-digit escape such as `\u2028` into the raw character. After such an edit, `grep -nP '[^\x00-\x7F]' <file>` lists every line that holds a non-ASCII character. Check each one is meant.
+
 ## Words
 
 `GLOSSARY.md` holds the domain words, and they are binding. Use its term, never a synonym. A change that brings a new concept adds its term to the glossary in the same change.

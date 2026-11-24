@@ -1,6 +1,8 @@
 node_modules/
 dist/
 coverage/
+# The spec checks keep the coverage map in e2e/coverage/.
+!/e2e/coverage/
 .turbo/
 *.log
 .env

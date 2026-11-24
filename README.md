@@ -81,8 +81,9 @@ Simplified Technical English. Pick it with `/output-style`.
 ## Global instructions
 
 [global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
-every session loads. It holds no rules at the moment. The ketch rules moved to
-the ketch-first plugin.
+every session loads. It holds the owner's stack for new projects: pnpm with
+turbo, TypeScript 6 and ESLint. The ketch rules moved to the ketch-first
+plugin.
 
 ## Add to the stack
 
@@ -125,7 +126,7 @@ the steps below show.
 | new-project | The spec-checks and backlog plugins, the `openspec` CLI, the `backlog` CLI. `gh` only to create a GitHub repository. | None |
 | openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. It ships with the other skills, and only the user can start it. Leave it unused. |
 | simple-technical | Nothing | None |
-| global/CLAUDE.md | Nothing | Empty at the moment. Skip it. |
+| global/CLAUDE.md | Nothing | It holds the owner's stack. Write the user's own stack in its place, or skip it. |
 
 ### Install one part
 
@@ -156,3 +157,7 @@ session.
 - For spec-checks development: `cd plugins/spec-checks && pnpm install && pnpm test`.
 - For backlog development: `cd plugins/backlog && pnpm test`. The end-to-end
   tests skip without the `backlog` CLI.
+- For affected-tests development: copy `plugins/fstack/skills/affected-tests/templates/`
+  into the `scripts/` folder of a scratch git repository, commit, and run
+  `node --test "scripts/**/*.test.mjs"` there. The tests find their files from
+  the project root, so they fail in the templates folder.

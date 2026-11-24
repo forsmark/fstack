@@ -45,7 +45,7 @@ The board and the web view show a claimed task from its branch, but a change mad
 
 When you file work for someone else, state the problem and leave the solution open. The session that takes the task rewrites it as a task before it writes the plan.
 
-An idea or a request that no one has decided to do is a draft: `backlog draft create`. The board holds decided work only.
+An idea or a request that no one has decided to do is a draft: `backlog draft create`. The board holds decided work only. A draft takes no `--ref`, so put the link to its source in the description.
 
 The orchestrator, or the owner, files tasks and drafts on the base and commits them before it hands tasks out. Then the hand-out reads one list, and each worktree starts from a commit that holds its task. A worker reports follow-up work in its final report, and the orchestrator files it.
 
@@ -59,7 +59,7 @@ Decide whether the task carries an OpenSpec change, as the `spec-checks:practice
   - one to five **outcomes** in plain words, one for each result a person can see when the change is in, such as "The login form names the field that is wrong". They sum up the scenarios of the delta specs for a reader of the board. The scenarios stay the detailed acceptance.
   - a last criterion: "The OpenSpec change <change> is archived", such as "The OpenSpec change login-copy is archived".
 
-The change's `tasks.md` is the plan. Edit that file and leave the task's plan to the plugin's hook. On a task branch, after each tool call that changes `tasks.md`, adds the link or runs a git command that can bring another `tasks.md`, the hook copies `tasks.md` into the plan of the branch's task. When it copies, it tells you that the task file changed. Commit that file with your next commit.
+The change's `tasks.md` is the plan. Edit that file and leave the task's plan to the plugin's hook. On a task branch, after each tool call that changes `tasks.md`, adds the link or runs a git command that can bring another `tasks.md`, the hook copies `tasks.md` into the plan of the branch's task. When it copies, it tells you that the task file changed. Commit that file with your next commit. The hook runs after the whole tool call, so tick `tasks.md` in one call and commit in the next: a commit in the same call as a tick leaves the copy out.
 
 After an edit outside Claude Code, copy the plan by hand, in the worktree:
 
@@ -73,7 +73,7 @@ When the change is archived, replace the link with the archived path: `--remove-
 
 The orchestrator does these steps in the main checkout. It makes every worktree itself, so a worker that stops at a gate can be resumed in the same folder.
 
-1. Find the free tasks. `backlog task list -s "To Do" --ready --json` lists the tasks whose dependencies are all Done. Skip a task that has subtasks, and hand out its subtasks instead. A ready task is free when `git branch --list 'task-*'` shows no task branch for it.
+1. Find the free tasks. `backlog task list -s "To Do" --ready --json` lists the tasks whose dependencies are all Done. Skip a task that has subtasks, and hand out its subtasks instead. A ready task is free when `git branch --list 'task-*'` shows no task branch for it. When two free tasks will change the same spec requirement, they can still run in parallel: the second to merge reconciles, as [Bring the base into a task branch](#bring-the-base-into-a-task-branch) says. When the owner wants no reconcile, make one depend on the other.
 2. Claim each task, then make its worktree:
 
    ```bash
@@ -82,7 +82,7 @@ The orchestrator does these steps in the main checkout. It makes every worktree 
    ```
 
    The first command is the claim. When git says that the branch already exists, or that it cannot lock the ref, another session holds the task. Take the next free task. When the second command fails, the claim is still yours: fix the cause, such as a folder in the way, and run it again.
-3. Start one worker for each worktree, without the harness's worktree isolation. Give it the task ID, the worktree path, a name for the assignee field, such as `@worker-12`, and the name of this skill.
+3. Start one worker for each worktree, without the harness's worktree isolation. Give it the task ID, the worktree path, a name for the assignee field, such as `@worker-12`, and the name of this skill. Keep the agent ID or name that the start returns, so you can send the worker the owner's answer when it stops at a gate.
 
 Done when each worker has a claimed task, its worktree, and a prompt that names all three.
 
@@ -90,7 +90,7 @@ A session that works alone claims with `git switch -c task-12 <base>` and works 
 
 ## Resume a task
 
-A worker stops before the task is Done at each owner gate of the spec-checks practice, and when it fails. Its task branch and worktree stay, so the task stays claimed. To go on, the orchestrator starts a new worker in the same worktree, with the task ID, the worktree path, the assignee name and the owner's answer. The new worker goes on at the step it reached.
+A worker stops before the task is Done at each owner gate of the spec-checks practice, and when it fails. Its task branch and worktree stay, so the task stays claimed. To go on, the orchestrator sends the owner's answer to the same worker, such as with SendMessage. The worker keeps what it learned, so the message can be short. When that worker is gone, the orchestrator starts a new worker in the same worktree, with the task ID, the worktree path, the assignee name, the owner's answer and the decisions the owner already made. The worker goes on at the step it reached.
 
 To tell a stalled claim from a live one, read `git worktree list` for the worktree of each task branch and `git log -1 --format=%cr task-12` for its last commit. Ask the owner before you delete a task branch that another session made.
 
@@ -99,16 +99,26 @@ To tell a stalled claim from a live one, read `git worktree list` for the worktr
 The worker does these steps in its worktree. A subagent's shell can go back to the main checkout between calls, so start each shell command with `cd <worktree> &&`. Then each `backlog` command changes the task on your branch, and the hook finds your branch.
 
 1. Mark the start: `backlog task edit <ID> -s "In Progress" -a @<assignee name>`. Commit the task file. The board then shows the task In Progress.
-2. Follow `backlog instructions task-execution`. When the task carries an OpenSpec change, the owner answers the proposal gate and the sync question before archive. At each gate, commit and push your work, report the question, and stop. Work that falls outside the acceptance criteria goes into your final report as follow-up work.
-3. Check each outcome criterion as soon as evidence shows it, such as a test that passes or a run that you watched: `backlog task edit <ID> --check-ac <n>`. Commit the task file with the work of each step, so the board counts the progress. Backlog.md's guide checks criteria only at the end, and this rule replaces that.
-4. Follow `backlog instructions task-finalization`. Check the criteria that are left against evidence, write the final summary and set the task Done. The review of the pull request is the user review that the guide asks for.
-5. Commit the task file with the last code.
+2. Follow `backlog instructions task-execution`. When the task carries an OpenSpec change, the owner answers the proposal gate and the sync question before archive. At each gate, commit and push your work, report the question, and stop. Work that falls outside the acceptance criteria is follow-up work: list it in the task's final summary and in your final report, where the orchestrator reads it and files it.
+3. Check each outcome criterion as soon as evidence shows it, such as a test that passes or a run that you watched: `backlog task edit <ID> --check-ac <n> --append-notes "<the evidence>"`. Commit the task file with the work of each step, so the board counts the progress. Backlog.md's guide checks criteria only at the end, and this rule replaces that.
+4. Commit the last code, so the tree is clean, and run the project's checks before any `backlog task edit`. An edit changes the task file, and a check run on a dirty tree records no pass. Then follow `backlog instructions task-finalization`: check the criteria that are left and the Definition of Done against that evidence, write the final summary and set the task Done. The review before the merge is the user review that the guide asks for.
+5. Commit the task file. This commit changes only the task file, so the code that merges is the code the checks ran on.
 
 Done when the task is Done on the task branch and `git status` shows a clean tree.
+
+## Bring the base into a task branch
+
+When the base moves on while a task runs, such as when another task merges a change to the same spec requirement, the worker merges the base into its task branch before its sync gate. With a forge, pull requests merge on the forge, so fetch first: `git fetch && git merge origin/<base>`. Without one, merges land on the base branch in the main checkout, which the worktree shares: `git merge <base>`.
+
+- The merge brings the base's copies of other tasks' files. Bringing them is no write by this branch, so leave those files as they are. The one-writer rule covers the changes a branch makes.
+- When what landed changes a requirement that your change also changes, reconcile the two. A MODIFIED requirement keeps every scenario that the base's spec now holds, because OpenSpec refuses to drop or rename a scenario of a main spec. A reconcile changes what the owner approved at the proposal gate, so treat it as the spec-checks practice treats a changed design decision: record it under `## Changed during apply` in `design.md`, commit, push, stop, and report it. When the reconcile rewords a requirement, run `spec-checks claims <change>` again and update `## Claims checked` in `proposal.md`.
+- The hook runs after the merge. Commit the task file when it changed.
 
 ## After the merge
 
 The board shows a task Done as soon as its branch commits Done, before the merge. A task is in when the base's own copy shows it Done. That test also holds after a squash merge, which git does not count as merged.
+
+In a project with a forge such as GitHub, the task branch merges through its pull request, after the owner's review. In a project without one, the orchestrator reviews the task branch and merges it in the main checkout: `git merge --no-ff task-12`.
 
 The orchestrator releases each claim in the main checkout:
 
