@@ -81,9 +81,12 @@ Simplified Technical English. Pick it with `/output-style`.
 ## Global instructions
 
 [global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
-every session loads. It holds the owner's stack for new projects: pnpm with
-turbo, TypeScript 6 and ESLint. The ketch rules moved to the ketch-first
-plugin.
+every session loads. It tells Claude to put questions in the pocket, to change
+the setup here and not in the plugin cache, and to commit with the owner's
+GitHub noreply address. It also holds the owner's stack for new projects:
+pnpm with turbo, TypeScript 6 and ESLint, and React, TanStack Router, TanStack
+Query and Tailwind CSS for a web front end. The ketch rules moved to the
+ketch-first plugin.
 
 ## Add to the stack
 
@@ -126,7 +129,7 @@ the steps below show.
 | new-project | The spec-checks and backlog plugins, the `openspec` CLI, the `backlog` CLI. `gh` only to create a GitHub repository. | None |
 | openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. It ships with the other skills, and only the user can start it. Leave it unused. |
 | simple-technical | Nothing | None |
-| global/CLAUDE.md | Nothing | It holds the owner's stack. Write the user's own stack in its place, or skip it. |
+| global/CLAUDE.md | The pocket plugin, for its Questions section. | It holds the owner's checkout path, GitHub noreply address and stack. Write the user's own in their place, or skip it. |
 
 ### Install one part
 
