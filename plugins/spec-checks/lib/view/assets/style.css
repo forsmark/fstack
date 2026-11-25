@@ -1,0 +1,276 @@
+/* The spec viewer: a rulebook on ledger paper, with test evidence in the margin. */
+
+:root {
+  --paper: #eef1ee;
+  --sheet: #fafbf9;
+  --ink: #1c2a31;
+  --muted: #5a696f;
+  --rule: #d2d9d5;
+  --accent: #3946a8;
+  --code: #e4e9e5;
+  --tested: #2c7651;
+  --reason: #78808a;
+  --pending: #a8731a;
+  --gap: #b13636;
+  --untracked: var(--rule);
+  --serif: Charter, "Bitstream Charter", "Sitka Text", Cambria, "Iowan Old Style", Georgia, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12171a;
+    --sheet: #182024;
+    --ink: #e1e7e4;
+    --muted: #97a5aa;
+    --rule: #2b363b;
+    --accent: #a3acff;
+    --code: #222b30;
+    --tested: #62c08f;
+    --reason: #9aa3ab;
+    --pending: #dfa94a;
+    --gap: #ee7c7c;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--paper); }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 1.0625rem/1.6 var(--serif);
+  font-variant-numeric: oldstyle-nums;
+  -webkit-text-size-adjust: 100%;
+}
+
+a { color: var(--accent); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+
+code {
+  font: 0.86em/1.4 var(--mono);
+  background: var(--code);
+  padding: 0.08em 0.3em;
+  border-radius: 3px;
+  overflow-wrap: anywhere;
+}
+pre { background: var(--code); padding: 0.75rem 1rem; border-radius: 4px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+
+/* The bar at the top of every page. */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem clamp(1rem, 4vw, 2.5rem);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 0.9rem;
+}
+.home { color: var(--ink); font-weight: 650; text-decoration: none; }
+.home-note { color: var(--muted); font-weight: 400; }
+.live { color: var(--muted); display: inline-flex; align-items: center; gap: 0.4em; }
+.live::before { content: ""; width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--rule); }
+.live[data-state="live"]::before { background: var(--tested); }
+.live[data-state="off"]::before { background: var(--pending); }
+
+main {
+  /* A long word, path or address breaks before it widens the page. */
+  overflow-wrap: anywhere;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 2rem clamp(1rem, 4vw, 2.5rem) 5rem;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 4.5vw, 2.6rem);
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0.4rem 0 0.4rem;
+  max-width: 40rem;
+}
+.lede { font-size: 1.12rem; color: var(--muted); margin: 0 0 1.25rem; max-width: 40rem; }
+.source { margin: 0 0 1.25rem; font-size: 0.95rem; }
+.purpose { max-width: 40rem; font-size: 1.12rem; }
+.note, .problems { font-family: var(--sans); font-size: 0.95rem; color: var(--muted); max-width: 40rem; }
+.problems { border-left: 3px solid var(--gap); padding-left: 0.9rem; }
+
+.crumbs { font-family: var(--sans); font-size: 0.9rem; }
+
+/* Coverage bars and their legend. */
+.bar { display: block; width: 100%; height: 0.35rem; border-radius: 2px; overflow: hidden; background: var(--rule); }
+.bar-large { height: 0.75rem; margin: 0.25rem 0 0.75rem; max-width: 40rem; }
+.fill-e2e { fill: var(--tested); background: var(--tested); }
+.fill-unit { fill: color-mix(in srgb, var(--tested) 62%, var(--sheet)); background: color-mix(in srgb, var(--tested) 62%, var(--sheet)); }
+.fill-none { fill: var(--reason); background: var(--reason); }
+.fill-not-yet { fill: var(--pending); background: var(--pending); }
+.fill-missing, .fill-invalid, .fill-conflict { fill: var(--gap); background: var(--gap); }
+.legend {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+.legend li { display: inline-flex; align-items: center; gap: 0.45em; }
+.swatch { width: 0.7em; height: 0.7em; border-radius: 2px; display: inline-block; }
+.count { color: var(--ink); font-variant-numeric: tabular-nums lining-nums; }
+
+/* The index. */
+.filter { display: block; font-family: var(--sans); font-size: 0.9rem; color: var(--muted); margin: 1.5rem 0 0.3rem; }
+.filter-input {
+  width: min(100%, 26rem);
+  font: 1rem var(--sans);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--sheet);
+  color: var(--ink);
+}
+.spec-list {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0 2rem;
+}
+.spec-list li { padding: 0.9rem 0 1rem; border-top: 1px solid var(--rule); }
+.spec-list li[hidden] { display: none; }
+.spec-link { font-family: var(--sans); font-weight: 650; font-size: 1.02rem; }
+.purpose-line {
+  margin: 0.25rem 0 0.35rem;
+  font-size: 0.97rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.counts { margin: 0 0 0.5rem; font-family: var(--sans); font-size: 0.82rem; color: var(--muted); font-variant-numeric: tabular-nums lining-nums; }
+
+/* A spec page. */
+.contents { margin: 1.5rem 0 2.5rem; max-width: 40rem; font-family: var(--sans); font-size: 0.93rem; }
+.contents summary { cursor: pointer; color: var(--muted); }
+.toc { padding-left: 0; list-style: none; margin: 0.6rem 0 0; columns: 2 18rem; column-gap: 2rem; }
+.toc li { break-inside: avoid; padding: 0.15rem 0; }
+.toc-note { color: var(--pending); font-size: 0.85em; white-space: nowrap; }
+
+.clause {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums lining-nums;
+  text-decoration: none;
+  margin-right: 0.15em;
+}
+
+.requirement { margin: 3rem 0 0; scroll-margin-top: 3.5rem; }
+.requirement h2 {
+  font-size: 1.4rem;
+  line-height: 1.3;
+  margin: 0 0 0.6rem;
+  max-width: 40rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rule);
+}
+.rule { max-width: 40rem; }
+.rule p { margin: 0 0 0.8rem; }
+.rule table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.95rem; margin: 0 0 1rem; }
+/* A table scrolls sideways, so its words need not break. */
+.rule th, .rule td { overflow-wrap: normal; border-bottom: 1px solid var(--rule); padding: 0.3rem 0.8rem 0.3rem 0; text-align: left; vertical-align: top; }
+blockquote { margin: 0 0 1rem; padding-left: 1rem; border-left: 2px solid var(--rule); color: var(--muted); }
+
+/* SHALL, MUST, SHOULD and MAY: set apart in small capitals, not shouted. The text stays in capitals. */
+.keyword {
+  font-variant-caps: all-small-caps;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.gap-note {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--pending);
+  margin: 0 0 0.8rem;
+}
+
+/* A scenario: its steps, and its test evidence in the margin. */
+.scenario {
+  --state: var(--untracked);
+  margin: 1.1rem 0 0;
+  padding: 0.1rem 0 0.1rem 1rem;
+  border-left: 3px solid var(--state);
+  scroll-margin-top: 3.5rem;
+}
+.state-tested { --state: var(--tested); }
+.state-reason { --state: var(--reason); }
+.state-pending { --state: var(--pending); }
+.state-gap { --state: var(--gap); }
+
+.scenario h3 { font-size: 1.02rem; font-weight: 650; margin: 0 0 0.3rem; line-height: 1.4; }
+.scenario h3 a { color: inherit; text-decoration: none; }
+.scenario h3 a:hover { text-decoration: underline; }
+.steps { margin: 0; }
+.step { display: grid; grid-template-columns: 3.6rem minmax(0, 1fr); gap: 0 0.5rem; }
+.step dt {
+  font-family: var(--sans);
+  font-variant-caps: all-small-caps;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.75;
+}
+.step dd { margin: 0 0 0.2rem; }
+
+.evidence {
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+}
+.evidence p { margin: 0 0 0.2rem; }
+.evidence-kind { color: var(--state); font-weight: 650; }
+.state-reason .evidence-kind { color: var(--muted); }
+.evidence-file code { background: none; padding: 0; font-size: 0.95em; overflow-wrap: break-word; }
+.evidence-title { color: var(--ink); }
+.evidence-checked { font-style: italic; }
+
+@media (min-width: 58rem) {
+  .scenario {
+    display: grid;
+    grid-template-columns: minmax(0, 40rem) minmax(12rem, 1fr);
+    gap: 0 2.5rem;
+  }
+  .evidence { margin: 0.2rem 0 0; padding-left: 1rem; border-left: 1px dotted var(--rule); }
+}
+
+@media print {
+  .masthead, .filter, .filter-input, .contents { display: none; }
+  body { background: white; }
+}
+
+/* Old-style figures suit the serif text. The sans-serif notes keep lining figures. */
+.masthead, .note, .problems, .crumbs, .legend, .filter, .counts, .contents, .gap-note, .evidence {
+  font-variant-numeric: lining-nums;
+}

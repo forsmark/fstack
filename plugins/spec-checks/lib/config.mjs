@@ -80,6 +80,11 @@ export function configProblems(config) {
     const other = others.find((adapter) => adapter.roots.some((each) => cleanRoot(each) === cleanRoot(root)));
     if (other) problems.push(`${root} is a root of an "e2e" adapter and of the ${other.kind} adapter. Give each root one kind of test`);
   }
+  const isPath = (value) => typeof value === 'string' && value.trim() !== '';
+  if (!isPath(config.coverage.mapDir)) problems.push('"coverage.mapDir" is a folder, as "e2e/coverage"');
+  for (const [name, path] of Object.entries(config.baselines)) {
+    if (!isPath(path)) problems.push(`"baselines.${name}" is the path of a file`);
+  }
   const groups = config.sweep.groups ?? {};
   if (typeof groups !== 'object' || Array.isArray(groups)) problems.push('"sweep.groups" maps a group name to a list of capabilities');
   for (const [group, capabilities] of Object.entries(typeof groups === 'object' && !Array.isArray(groups) ? groups : {})) {

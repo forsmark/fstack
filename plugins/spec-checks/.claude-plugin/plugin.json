@@ -1,7 +1,7 @@
 {
   "name": "spec-checks",
-  "version": "0.1.0",
-  "description": "An OpenSpec working practice and the checks that hold specs to it: every scenario has a test or a reason, every SHALL sentence has a scenario, no requirement drops out silently, and no rule changes after its proposal was approved",
+  "version": "0.2.0",
+  "description": "An OpenSpec working practice and the checks that hold specs to it: every scenario has a test or a reason, every SHALL sentence has a scenario, no requirement drops out silently, and no rule changes after its proposal was approved. A local viewer shows the specs as web pages",
   "author": {
     "name": "Marc Forsmark Nielsen"
   },

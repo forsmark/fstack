@@ -57,7 +57,7 @@ To install one plugin from GitHub, without a checkout:
 | [pocket](plugins/pocket/README.md) | Holds Claude's questions while you are away, so it can keep working. You answer when you are ready. |
 | [image-preview](plugins/image-preview/README.md) | Shows a preview of an image in the transcript. |
 | [ketch-first](plugins/ketch-first/README.md) | Answers WebSearch and WebFetch with the `ketch` CLI when it is installed. The built-in tool runs when ketch fails. |
-| [spec-checks](plugins/spec-checks/README.md) | An OpenSpec working practice and the checks that hold specs to it, for projects that opt in. |
+| [spec-checks](plugins/spec-checks/README.md) | An OpenSpec working practice and the checks that hold specs to it, for projects that opt in. A local viewer shows the specs as web pages. |
 | [backlog](plugins/backlog/README.md) | The Backlog.md practice: a task branch claims a task across worktrees, and a hook copies an OpenSpec change's `tasks.md` into the plan of its task. |
 
 ## Skills

@@ -1,7 +1,7 @@
 # spec-checks
 
-An OpenSpec working practice and the checks that hold specs to it. It has
-three parts:
+An OpenSpec working practice, the checks that hold specs to it, and a viewer
+for the specs. It has four parts:
 
 - The `practice` skill: how a change is proposed, applied and archived, how a
   spec is written, how each scenario maps to a test, and how a sweep finds
@@ -10,9 +10,12 @@ three parts:
 - A hook that runs `spec-checks validate` and `spec-checks dropped` after a
   tool call that touches `openspec/specs`. On a failure, Claude gets the
   problems.
+- The `view` skill: Claude starts `spec-checks view` and gives you the
+  address of the specs as web pages.
 
-All three do nothing in a project without `openspec/checks.json`. That file
-is the opt-in, and the `openspec-migrate` skill offers it.
+The practice, the checks and the hook do nothing in a project without
+`openspec/checks.json`. That file is the opt-in, and the `openspec-migrate`
+skill offers it. The viewer needs only `openspec/specs`.
 
 The checks, which `spec-checks verify` runs in the order the config lists:
 
@@ -34,6 +37,17 @@ The helpers are `gate <change>`, `claims <change>`, `preview <change>`,
 `sweep-groups`, `sweep-dismissed` and `vendor`. `spec-checks --help` lists
 them. `vendor` copies the CLI into the project at `tools/spec-checks/`, so CI
 runs it without the plugin. The hook runs that copy when there is one.
+
+`spec-checks view` shows the main specs as web pages at
+`http://127.0.0.1:4747/`, or at a free port when 4747 is in use. Each
+requirement marks its SHALL, MUST, SHOULD and MAY. Each scenario shows its
+steps, and its test from the coverage map or the reason it has none. An open
+page reloads when a spec, a coverage map or the not-yet list changes. The
+viewer only reads, and it answers only requests addressed to 127.0.0.1,
+localhost or [::1]. In a project
+without `openspec/checks.json`, the pages show no coverage. `--port <n>` names
+the port, `--open` opens the page in the default browser, and `--root <folder>`
+names the project. `/view.json` holds the data of the pages.
 
 The coverage check parses test files with the TypeScript compiler API. It loads
 `typescript` from the project. TypeScript 7 ships without that API, so a

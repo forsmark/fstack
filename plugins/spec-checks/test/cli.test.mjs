@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { main, runCheck } from '../lib/cli.mjs';
 import { tempFolder, tempRepo, withEnv, writeChecks } from './temp-repo.mjs';
@@ -47,6 +48,40 @@ describe('main', () => {
     writeChecks(root, { checks: ['lint'] });
     assert.equal(main(['shall', '--root', root]), 2);
     assert.match(printed.err(), /"checks" names lint/);
+  });
+});
+
+describe('main view', () => {
+  let root;
+  beforeEach(() => {
+    root = tempFolder();
+    mkdirSync(join(root, 'openspec/specs'), { recursive: true });
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  for (const port of ['', ' ', '0x10', '1e3', '-5', '70000']) {
+    it(`refuses --port ${JSON.stringify(port)} before it starts a server`, (t) => {
+      const printed = quiet(t);
+      assert.equal(main(['view', '--root', root, '--port', port]), 2);
+      assert.match(printed.err(), /--port takes a number from 0 to 65535/);
+    });
+  }
+
+  it('refuses an option it does not know, such as --port=5000', (t) => {
+    const printed = quiet(t);
+    assert.equal(main(['view', '--root', root, '--port=5000']), 2);
+    assert.match(printed.err(), /--port=5000 is not an option of view/);
+  });
+
+  it('refuses a folder with no openspec/specs at or above it', (t) => {
+    const printed = quiet(t);
+    const empty = tempFolder();
+    try {
+      assert.equal(main(['view', '--root', empty]), 2);
+      assert.match(printed.err(), /no openspec\/specs at or above/);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
   });
 });
 

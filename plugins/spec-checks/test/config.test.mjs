@@ -39,6 +39,14 @@ describe('configProblems', () => {
     assert.deepEqual(problemsOf({}), []);
   });
 
+  it('names a coverage map folder or a baseline that is no path', () => {
+    assert.deepEqual(problemsOf({ coverage: { mapDir: 3 } }), ['"coverage.mapDir" is a folder, as "e2e/coverage"']);
+    assert.deepEqual(problemsOf({ baselines: { coverage: null, shall: ' ' } }), [
+      '"baselines.coverage" is the path of a file',
+      '"baselines.shall" is the path of a file',
+    ]);
+  });
+
   it('names baseRefs that are empty or no list', () => {
     const message = '"baseRefs" is a list of one or more refs, as ["origin/main"]';
     assert.deepEqual(problemsOf({ baseRefs: [] }), [message]);

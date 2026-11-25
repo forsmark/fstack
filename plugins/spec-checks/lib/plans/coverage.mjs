@@ -45,7 +45,7 @@ export const mapFile = (capability, mapDir = MAP_DIR) => `${mapDir}/${capability
 const KINDS = ['e2e', 'unit', 'none'];
 
 /** A `<file> › <title>` reference, split at its first separator. */
-function splitReference(reference) {
+export function splitReference(reference) {
   const at = reference.indexOf(SEPARATOR);
   return at < 0
     ? [reference, '']
@@ -223,7 +223,7 @@ export function checkCoverage({
 }
 
 /** An entry's one kind, beside an optional `checked`, or null where it has none or several. */
-function kindOf(entry) {
+export function kindOf(entry) {
   const kinds = Object.keys(entry ?? {}).filter((field) => field !== 'checked');
   return kinds.length === 1 && KINDS.includes(kinds[0]) ? kinds[0] : null;
 }
