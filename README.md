@@ -129,7 +129,7 @@ the steps below show.
 | new-project | The spec-checks and backlog plugins, the `openspec` CLI, the `backlog` CLI. `gh` only to create a GitHub repository. | None |
 | openspec-migrate | The `openspec` CLI 2.1.0. | Temporary and personal. It ships with the other skills, and only the user can start it. Leave it unused. |
 | simple-technical | Nothing | None |
-| global/CLAUDE.md | The pocket plugin, for its Questions section. | It holds the owner's checkout path, GitHub noreply address and stack. Write the user's own in their place, or skip it. |
+| global/CLAUDE.md | The pocket plugin, for its Questions section. | It holds the owner's GitHub noreply address and stack. Write the user's own in their place, or skip it. |
 
 ### Install one part
 

@@ -6,7 +6,7 @@ Put each question for the user in the pocket with `mcp__pocket__ask`, including 
 
 ## fstack
 
-fstack, at `~/development/fstack`, holds the source of this setup: the plugins, the skills, the output style and this file. Make each change there. The plugins under `~/.claude/plugins/cache/` are copies of that source. A plugin or a skill picks up a change after `/reload-plugins`.
+fstack holds the source of this setup: the plugins, the skills, the output style and this file. `~/.claude/CLAUDE.md` is a link into the fstack checkout, so `readlink -f ~/.claude/CLAUDE.md` shows where the checkout is. Make each change there. The plugins under `~/.claude/plugins/cache/` are copies of that source. A plugin or a skill picks up a change after `/reload-plugins`.
 
 ## Commits
 
