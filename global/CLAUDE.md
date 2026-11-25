@@ -14,7 +14,7 @@ Follow `/fstack:orchestrate` before you start two or more agents, and before you
 
 Before you report work done, give it to `fstack:verifier` with the criteria, also when you worked alone. For a larger change, such as a new feature or a change across several modules, also run the `code-review` skill at `high` at the same time, after `git add -N` on new files so its diff holds them. The verifier runs the work against the criteria, and the review reads the code around the diff, so each finds what the other misses. Skip both only for a small change, such as a one-line fix or a wording change. Fix what fails, then give it to the verifier again. An agent that another session started skips both, and reports to that session.
 
-Set an effort level for each agent you start. `fstack:reader` runs at low, `fstack:worker` at medium and `fstack:verifier` at high. For any other agent, pass `effort` on the Agent call:
+Set an effort level for each agent you start. `fstack:reader` runs at low and `fstack:verifier` at high. `fstack:worker` runs at medium. For a whole task of a batch, such as a backlog task, pass `effort: high` on its Agent call. For any other agent, pass `effort` on the Agent call:
 
 - `low` for a lookup or a search with a checklist,
 - `medium` for a scoped task with a clear end,

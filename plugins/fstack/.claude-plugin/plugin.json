@@ -1,6 +1,6 @@
 {
   "name": "fstack",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The fstack skills, run as /fstack:<skill>, and the reader, worker and verifier agents",
   "author": {
     "name": "Marc Forsmark Nielsen"
