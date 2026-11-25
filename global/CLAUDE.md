@@ -12,7 +12,7 @@ fstack holds the source of this setup: the plugins, the skills, the output style
 
 Follow `/fstack:orchestrate` before you start two or more agents, and before you propose a workflow.
 
-Before you report work done, give it to `fstack:verifier` with the criteria, also when you worked alone. Skip this only for a small change, such as a one-line fix or a wording change. Fix what fails, then give it to the verifier again. An agent that another session started skips this, and reports to that session.
+Before you report work done, give it to `fstack:verifier` with the criteria, also when you worked alone. For a larger change, such as a new feature or a change across several modules, also run the `code-review` skill at `high` at the same time, after `git add -N` on new files so its diff holds them. The verifier runs the work against the criteria, and the review reads the code around the diff, so each finds what the other misses. Skip both only for a small change, such as a one-line fix or a wording change. Fix what fails, then give it to the verifier again. An agent that another session started skips both, and reports to that session.
 
 Set an effort level for each agent you start. `fstack:reader` runs at low, `fstack:worker` at medium and `fstack:verifier` at high. For any other agent, pass `effort` on the Agent call:
 

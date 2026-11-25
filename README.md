@@ -92,7 +92,8 @@ the setup here and not in the plugin cache, and to commit with the owner's
 GitHub noreply address. It sets the effort level of each agent Claude
 starts, and sends Claude to the orchestrate skill before it splits work.
 Before Claude reports work done, `fstack:verifier` checks it, unless the
-change is small. It also holds the owner's stack for new projects:
+change is small. A larger change also gets the built-in `/code-review` at
+high. It also holds the owner's stack for new projects:
 pnpm with turbo, TypeScript 6 and ESLint, and React, TanStack Router, TanStack
 Query and Tailwind CSS for a web front end. The ketch rules moved to the
 ketch-first plugin.
