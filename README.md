@@ -88,7 +88,7 @@ Simplified Technical English. Pick it with `/output-style`.
 
 [global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
 every session loads. It tells Claude to put questions in the pocket, to change
-the setup here and not in the plugin cache, and to commit with the owner's
+the setup in this checkout, and to commit with the owner's
 GitHub noreply address. It sets the effort level of each agent Claude
 starts, and sends Claude to the orchestrate skill before it splits work.
 Before Claude reports work done, `fstack:verifier` checks it, unless the
