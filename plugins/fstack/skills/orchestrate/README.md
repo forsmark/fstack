@@ -17,8 +17,8 @@ It works with the three agents of the fstack plugin:
 | Agent | Model | Effort | What it does |
 | --- | --- | --- | --- |
 | `fstack:reader` | Haiku 5.5 | low | Reads and reports, with paths and lines. Changes nothing. |
-| `fstack:worker` | the session's | medium | Does one scoped task, such as a change with its tests. |
-| `fstack:verifier` | the session's | high | Checks finished work against criteria, and judges findings. Changes nothing. |
+| `fstack:worker` | Opus | medium | Does one scoped task, such as a change with its tests. |
+| `fstack:verifier` | Opus | medium | Checks finished work against criteria, and judges findings. Changes nothing. |
 
 Each agent has its own tools and prompt.
 

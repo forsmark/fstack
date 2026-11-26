@@ -101,7 +101,7 @@ Then add the Definition of Done at the end of `backlog/config.yml`. `backlog con
 
 ```yaml
 definition_of_done:
-  - "`node scripts/verify.mjs --affected` passes on a clean tree"
+  - "`node scripts/verify.mjs --affected` passes on a clean tree, after `node scripts/verify.mjs --affected --list`"
 ```
 
 Git keeps no empty folders, so the commit holds only `backlog/config.yml`. Backlog.md makes the other folders again when it needs them.

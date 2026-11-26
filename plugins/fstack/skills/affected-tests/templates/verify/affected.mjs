@@ -59,6 +59,37 @@ export const READS_THE_WHOLE_REPO = [];
 const matches = (file, rule) => (typeof rule === 'string' ? file.startsWith(rule) : rule.test(file));
 
 /**
+ * What a change to one file runs, as `{ rule, package, extra, scripts }`.
+ * `rule` names the rule that matched: `scripts`, `package`, `no-tests` or
+ * `root`. `package` is the package folder, for the rule `package` only.
+ * `extra` names the packages that EXTRA_TESTS adds. `scripts` says whether the
+ * tests of SCRIPTS_DIR run. verify prints this for each file, so an agent sees
+ * what runs before it runs.
+ */
+export function ruleOf(file, extraTests = EXTRA_TESTS) {
+  let scripts = false;
+  const extra = new Set();
+  for (const { path, tests } of extraTests) {
+    if (!path.test(file)) continue;
+    for (const test of tests) {
+      // Without SCRIPTS_DIR there are no script tests to run.
+      if (test === SCRIPT_TESTS) scripts = SCRIPTS_DIR !== null;
+      else extra.add(test);
+    }
+  }
+  const found = (rule, more = {}) => ({ rule, extra: [...extra].sort(), scripts, ...more });
+  if (SCRIPTS_DIR && file.startsWith(`${SCRIPTS_DIR}/`)) {
+    return found('scripts', { scripts: true });
+  }
+  const folder = PACKAGE.exec(file)?.[0];
+  if (folder) return found('package', { package: folder });
+  if (NO_TESTS.some((rule) => matches(file, rule))) return found('no-tests');
+  // A root file, such as the lockfile or a shared config, can change any
+  // package. A filter by changed packages can map it to none of them.
+  return found('root', { scripts: SCRIPTS_DIR !== null });
+}
+
+/**
  * What a change to `files` runs, as `{ packages, extra, scripts }`.
  * `packages` is `all`, `changed` or `none`. `changed` means the changed
  * packages and their dependents, which the test runner's filter selects.
@@ -70,25 +101,11 @@ export function scopeOf(files, extraTests = EXTRA_TESTS) {
   let scripts = false;
   const extra = new Set();
   for (const file of files) {
-    for (const { path, tests } of extraTests) {
-      if (!path.test(file)) continue;
-      for (const test of tests) {
-        if (test === SCRIPT_TESTS) scripts = true;
-        else extra.add(test);
-      }
-    }
-    if (SCRIPTS_DIR && file.startsWith(`${SCRIPTS_DIR}/`)) {
-      scripts = true;
-    } else if (PACKAGE.test(file)) {
-      if (packages === 'none') packages = 'changed';
-    } else if (NO_TESTS.some((rule) => matches(file, rule))) {
-      continue;
-    } else {
-      // A root file, such as the lockfile or a shared config, can change any
-      // package. A filter by changed packages can map it to none of them.
-      packages = 'all';
-      scripts = SCRIPTS_DIR !== null;
-    }
+    const found = ruleOf(file, extraTests);
+    for (const name of found.extra) extra.add(name);
+    if (found.scripts) scripts = true;
+    if (found.rule === 'root') packages = 'all';
+    else if (found.rule === 'package' && packages === 'none') packages = 'changed';
   }
   return { packages, extra: packages === 'all' ? [] : [...extra].sort(), scripts };
 }

@@ -204,6 +204,38 @@ test('at 90% Claude is told once per window and period', async ($, on) => {
   expect(seen.notes[2]).toContain('The weekly usage window is at 90%')
 })
 
+// A reset time `minutes` from now, as the API reports it.
+const resetIn = (minutes: number) => new Date((NOW_S + minutes * 60) * 1000).toISOString()
+
+test('a window that resets within 15 minutes gets no handoff notice', async ($, on) => {
+  const seen = engine(on)
+  await measure($, [limit('five_hour', 95, resetIn(15)), limit('seven_day', 52.5, SEVEN)])
+  await measure($, [limit('five_hour', 97, resetIn(15)), limit('seven_day', 52.5, SEVEN)])
+  expect(seen.notes).toEqual([])
+  expect(seen.toasts).toEqual([])
+})
+
+test('a window that resets in more than 15 minutes gets the handoff notice', async ($, on) => {
+  const seen = engine(on)
+  await measure($, [limit('five_hour', 95, resetIn(16)), limit('seven_day', 52.5, SEVEN)])
+  expect(seen.notes.length).toBe(1)
+  expect(seen.notes[0]).toContain('The 5-hour usage window is at 95%')
+})
+
+test('a window with no reset time gets the handoff notice', async ($, on) => {
+  const seen = engine(on)
+  await measure($, [limit('five_hour', 95), limit('seven_day', 52.5, SEVEN)])
+  expect(seen.notes.length).toBe(1)
+  expect(seen.notes[0]).toContain('The 5-hour usage window is at 95%')
+})
+
+test('a window that resets soon does not hold back the notice of the other window', async ($, on) => {
+  const seen = engine(on)
+  await measure($, [limit('five_hour', 95, resetIn(5)), limit('seven_day', 92, SEVEN)])
+  expect(seen.notes.length).toBe(1)
+  expect(seen.notes[0]).toContain('The weekly usage window is at 92%')
+})
+
 test('the first prompt of a session checks before any API response', async ($, on) => {
   const seen = engine(on, { endpoint: { ok: true, text: ENDPOINT } })
   await $.prompt.submit({ text: 'hello' } as never)

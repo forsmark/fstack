@@ -66,13 +66,13 @@ Done when each piece names what it reads and what it writes, and no two pieces w
 | Role | Agent | Model | Effort |
 | --- | --- | --- | --- |
 | A lookup, a search, or one path of a parallel read | `fstack:reader` | Haiku 5.5 | low |
-| One scoped task, such as a change with its tests | `fstack:worker` | the session's | medium |
-| One whole task of a batch, such as a backlog task that carries an OpenSpec change | `fstack:worker` | the session's | high, passed on the Agent call |
-| A check of finished work, or a verdict on findings | `fstack:verifier` | the session's | high |
+| One scoped task, such as a change with its tests | `fstack:worker` | Opus | medium |
+| One whole task of a batch, such as a backlog task that carries an OpenSpec change | `fstack:worker` | Opus | high, passed on the Agent call |
+| A check of finished work, or a verdict on findings | `fstack:verifier` | Opus | medium |
 | A wide search of an unknown codebase | `Explore` | its own | its own |
 | A piece that needs this conversation | a fork | this session's | this session's |
 
-The fstack agents set their own model and effort. For any other agent, pass `effort` on the Agent call.
+The fstack agents set their own model and effort. The worker and the verifier run on Opus whatever model the session runs on. A `model` that you pass on the Agent call overrides that. For any other agent, pass `effort` on the Agent call.
 
 - Haiku 5.5 costs five times more per token when the prompt of a request passes 100K tokens. A reader at a higher effort makes more tool calls, so its prompt grows faster. Keep the reader at low and give it one narrow question. Split a wide read across several readers.
 - When a read needs judgement, such as a choice between two designs, pass `model` on the Agent call to run the reader on a larger model.
@@ -115,6 +115,7 @@ Done when the plan says what happens when each agent fails.
 
 - Read each report as a claim. Check a fact against its file before you build on it or pass it on. An agent's mistakes read as confident as its findings.
 - Before you report work done, give it to `fstack:verifier` with the criteria. Skip this only for a small change, such as a one-line fix or a wording change.
+- Fix what fails, then give the verifier one re-check with only the failed criteria and the fixes. A fix to wording or a comment needs no re-check. After the re-check, fix what still fails with no third check. Name in the report each criterion that no check passed.
 - For a larger change, such as a new feature or a change across several modules, also run the `code-review` skill at `high`, at the same time as the verifier. The verifier runs the work, and finds what only a run shows, such as a layout that breaks at phone width. The review reads the code around the diff, and finds what no criterion names, such as a rule elsewhere in the codebase that the change breaks. On one test diff they shared 3 findings, and each found 4 to 7 that the other missed. New files that git does not track may be missing from the review's diff, so run `git add -N` on them first. That puts them in the diff and stages none of their content.
 - Tell the user what is done, the evidence, and what is not covered, with the reason.
 

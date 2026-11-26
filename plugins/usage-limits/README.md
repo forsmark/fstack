@@ -1,9 +1,9 @@
 # usage-limits
 
 Reads the 5-hour and the weekly usage window: the percentage used and the
-reset time of each. At 90% it tells Claude to write a handoff. It is the port
-of two shell scripts, `~/.claude/usage/limits.sh` and
-`~/.claude/hooks/handoff-at-90.sh`.
+reset time of each. At 90% it tells Claude to write a handoff, unless the
+window resets within 15 minutes. It is the port of two shell scripts,
+`~/.claude/usage/limits.sh` and `~/.claude/hooks/handoff-at-90.sh`.
 
 The figure comes from the first source that has one:
 
@@ -31,8 +31,9 @@ The figure goes out three ways:
   and the status line script can read it.
 - When a window reaches 90%, Claude gets a hidden note that tells it to stop at
   the next safe point and write a handoff. You see a toast. The note goes once
-  per window and period. When no figure exists, Claude is told once per session
-  that usage is unknown.
+  per window and period. When the window resets within 15 minutes, no note
+  goes and Claude continues. When no figure exists, the mod tells Claude once
+  per session that usage is unknown.
 
 The mod checks after each main-thread turn, when a window moves a whole point,
 and at each prompt. The check at a prompt does not delay the prompt.
@@ -50,10 +51,14 @@ Cases it handles:
   older period.
 - Reset times that differ by a second between API responses: times within 2
   minutes count as the same period, so the handoff note is not sent twice.
+- A window at 90% that resets within 15 minutes: no note. The mod measures the
+  15 minutes from now, not from the time of the figure. Each check looks
+  again, so a window with a later reset time still gets its note. A window
+  with no reset time always gets it.
 - A cache file that is malformed, half-written or dated in the future: ignored.
 - The endpoint fails, times out after 8 seconds, or the session has no
   subscription login: no figure from it, and no second request for 60 seconds.
 
-Tune `THRESHOLD` and the time limits at the top of
+Tune `THRESHOLD`, `RESET_SOON_S` and the time limits at the top of
 `plugins/usage-limits/hooks/register.ts`. Run the tests with
 `claude plugin test usage-limits`.

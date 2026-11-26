@@ -248,7 +248,11 @@ describe('verify.mjs', () => {
     git('branch', 'base');
   });
   after(() => rmSync(dir, { recursive: true, force: true }));
-  beforeEach(() => rmSync(records, { recursive: true, force: true }));
+  beforeEach(() => {
+    rmSync(records, { recursive: true, force: true });
+    // The hash that --list keeps for the gate.
+    rmSync(join(work, '.git', 'verify-list'), { force: true });
+  });
 
   function git(...args) {
     const result = spawnSync('git', args, { cwd: work, env, encoding: 'utf8' });
@@ -263,13 +267,19 @@ describe('verify.mjs', () => {
     });
     return { status: result.status, signal: result.signal, out: result.stdout + result.stderr };
   }
+  /** An affected verify after its list, as the gate asks. */
+  function listThenVerify(args, extra = {}) {
+    const listed = verify([...args, '--list'], extra);
+    assert.equal(listed.status, 0, listed.out);
+    return verify(args, extra);
+  }
   const recorded = () =>
     existsSync(records)
       ? readdirSync(records).map((name) => JSON.parse(readFileSync(join(records, name), 'utf8')))
       : [];
 
   it('records an affected run that passed on a clean tree', () => {
-    const { status, out } = verify(['--affected', '--base', 'base']);
+    const { status, out } = listThenVerify(['--affected', '--base', 'base']);
     assert.equal(status, 0, out);
     assert.match(out, /verify: affected since base: no package\. Script tests: no\./);
     const [record, ...more] = recorded();
@@ -302,9 +312,13 @@ describe('verify.mjs', () => {
       writeFileSync(join(work, 'packages/core/src/index.js'), 'export const one = 2;\n');
       git('commit', '-q', '-am', 'Change core');
       const mergeBase = git('merge-base', 'base', 'HEAD');
-      const { status, out } = verify(['--affected', '--base', 'base']);
+      const { status, out } = listThenVerify(['--affected', '--base', 'base']);
       assert.equal(status, 0, out);
       assert.match(out, /affected since base: packages\/core and their dependents\./);
+      assert.match(out, /^ {2}packages\/core\/src\/index\.js: the tests of packages\/core and /m);
+      // The list comes before the first command.
+      const listed = out.indexOf('verify: this run starts, in order:');
+      assert.ok(listed >= 0 && listed < out.indexOf('ran '), out);
       // This follows the default CONFIG.testFiltered, which passes the filters in
       // turbo's syntax. A project whose testFiltered does not pass them, such as
       // one without turbo, checks here that its test command ran.
@@ -312,6 +326,103 @@ describe('verify.mjs', () => {
     } finally {
       git('checkout', '-q', 'main');
     }
+  });
+
+  it('lists each changed file, its rule and the commands, and runs nothing, with --list', () => {
+    writeFileSync(join(work, 'packages/core/src/index.js'), 'export const one = 3;\n');
+    // Markdown at the root, which the default NO_TESTS matches.
+    writeFileSync(join(work, 'NOTES.md'), '# Notes\n');
+    try {
+      const mergeBase = git('merge-base', 'base', 'HEAD');
+      const { status, out } = verify(['--affected', '--list', '--base', 'base']);
+      assert.equal(status, 0, out);
+      assert.match(out, /^verify: 2 files changed since the merge base [0-9a-f]{12}:$/m);
+      const core = 'packages/core/src/index.js: the tests of packages/core and of each package';
+      assert.ok(out.includes(`\n  ${core} that depends on it\n`), out);
+      assert.match(out, /^ {2}NOTES\.md: no tests, as NO_TESTS matches it$/m);
+      // This follows the default CONFIG.testFiltered, as the test above does.
+      assert.ok(out.includes(`\n  pnpm turbo run test '--filter=...[${mergeBase}]'\n`), out);
+      assert.match(out, /verify: --list ran nothing\./);
+      assert.doesNotMatch(out, /^ran /m);
+      assert.deepEqual(recorded(), []);
+    } finally {
+      git('checkout', '-q', '--', 'packages/core/src/index.js');
+      rmSync(join(work, 'NOTES.md'));
+    }
+  });
+
+  it('lists from the root, also from a subfolder and for a name outside ASCII', () => {
+    // A braced escape, so no tool turns it into a raw character in this file.
+    const name = 'r\u{e9}sum\u{e9}.md';
+    writeFileSync(join(work, 'packages/core/src/new.js'), 'export const two = 2;\n');
+    writeFileSync(join(work, name), '# CV\n');
+    try {
+      const args = ['../scripts/verify.mjs', '--affected', '--list', '--base', 'base'];
+      const result = spawnSync('node', args, {
+        cwd: join(work, 'packages'),
+        env,
+        encoding: 'utf8',
+      });
+      const out = result.stdout + result.stderr;
+      assert.equal(result.status, 0, out);
+      assert.ok(out.includes('\n  packages/core/src/new.js: the tests of packages/core and'), out);
+      assert.ok(out.includes(`\n  ${name}: no tests, as NO_TESTS matches it\n`), out);
+    } finally {
+      rmSync(join(work, 'packages/core/src/new.js'));
+      rmSync(join(work, name));
+    }
+  });
+
+  // A lock path under /dev/null, where no folder can exist. A run that takes the lock fails on it.
+  const noLock = { [HELD]: '', HEAVY_LOCK_FILE: '/dev/null/heavy.lock' };
+  const hasFlock = !spawnSync('flock', ['--version']).error;
+
+  it('takes no heavy lock with --list', () => {
+    const { status, out } = verify(['--affected', '--list', '--base', 'base'], noLock);
+    assert.equal(status, 0, out);
+    assert.match(out, /verify: --list ran nothing\./);
+  });
+
+  it('takes the heavy lock without --list', { skip: !hasFlock && 'flock was not found' }, () => {
+    const { status, out } = listThenVerify(['--affected', '--base', 'base'], noLock);
+    assert.notEqual(status, 0);
+    assert.ok(out.includes('/dev/null'), out);
+    assert.doesNotMatch(out, /^ran /m);
+  });
+
+  it('refuses an affected verify before its list, and runs nothing', () => {
+    const { status, out } = verify(['--affected', '--base', 'base']);
+    assert.equal(status, 1, out);
+    assert.match(out, /verify: an affected verify runs only after its list\./);
+    assert.ok(out.includes('`node scripts/verify.mjs --affected --list --base base`'), out);
+    assert.doesNotMatch(out, /^ran /m);
+    assert.deepEqual(recorded(), []);
+  });
+
+  it('refuses an affected verify when the changes differ from the last list', () => {
+    assert.equal(verify(['--affected', '--list', '--base', 'base']).status, 0);
+    writeFileSync(join(work, 'packages/core/src/new.js'), 'export const two = 2;\n');
+    try {
+      const { status, out } = verify(['--affected', '--base', 'base']);
+      assert.equal(status, 1, out);
+      assert.match(out, /the changed files, the base or the commands differ from the last list\./);
+      assert.doesNotMatch(out, /^ran /m);
+    } finally {
+      rmSync(join(work, 'packages/core/src/new.js'));
+    }
+  });
+
+  it('refuses before it waits for the heavy lock', () => {
+    const { status, out } = verify(['--affected', '--base', 'base'], noLock);
+    assert.equal(status, 1, out);
+    assert.match(out, /runs only after its list/);
+    assert.ok(!out.includes('/dev/null'), out);
+  });
+
+  it('runs a full verify with no list', () => {
+    const { status, out } = verify(['--base', 'base']);
+    assert.equal(status, 0, out);
+    assert.match(out, /^verify: full run: every check and every test\.$/m);
   });
 
   it('records nothing when a step fails', () => {
@@ -329,7 +440,7 @@ describe('verify.mjs', () => {
   it('records nothing on a dirty tree, and says so', () => {
     writeFileSync(join(work, 'stray.txt'), 'stray');
     try {
-      const { status, out } = verify(['--affected', '--base', 'base']);
+      const { status, out } = listThenVerify(['--affected', '--base', 'base']);
       assert.equal(status, 0, out);
       assert.deepEqual(recorded(), []);
       assert.match(out, /recorded nothing/);

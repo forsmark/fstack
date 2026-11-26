@@ -75,8 +75,8 @@ The skills ship in the `fstack` plugin, so each one runs as
 
 The plugin also ships three agents for orchestrate. `fstack:reader` reads on
 Haiku 5.5 at low effort. `fstack:worker` does one scoped task at medium
-effort, and `fstack:verifier` checks finished work at high effort. Both run on
-the session's model.
+effort, and `fstack:verifier` checks finished work at medium effort. Both run on
+Opus, whatever model the session runs on.
 
 ## Output styles
 
@@ -88,15 +88,17 @@ Simplified Technical English. Pick it with `/output-style`.
 
 [global/CLAUDE.md](global/CLAUDE.md) is linked to `~/.claude/CLAUDE.md`, which
 every session loads. It tells Claude to put questions in the pocket, to change
-the setup in this checkout, and to commit with the owner's
-GitHub noreply address. It sets the effort level of each agent Claude
-starts, and sends Claude to the orchestrate skill before it splits work.
-Before Claude reports work done, `fstack:verifier` checks it, unless the
-change is small. A larger change also gets the built-in `/code-review` at
-high. It also holds the owner's stack for new projects:
-pnpm with turbo, TypeScript 6 and ESLint, and React, TanStack Router, TanStack
-Query and Tailwind CSS for a web front end. The ketch rules moved to the
-ketch-first plugin.
+the setup in this checkout, and to commit with the owner's GitHub noreply
+address. It sets the effort level of each agent Claude starts, and sends Claude
+to the orchestrate skill before it splits work. Before Claude reports work
+done, `fstack:verifier` checks it, unless the change is small. A larger change
+also gets the built-in `/code-review` at high. After a fix, the verifier checks
+once more, and only the criteria that failed. At the end of an implementation
+round, Claude removes the scratch files, worktrees and merged local branches
+that the round made. It also holds the owner's stack for new projects: pnpm
+with turbo, TypeScript 6, ESLint and Prettier. A web front end adds React,
+TanStack Router, TanStack Query, Tailwind CSS and Motion. The ketch rules moved
+to the ketch-first plugin.
 
 ## Add to the stack
 

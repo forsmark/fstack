@@ -1,7 +1,8 @@
 ---
 name: verifier
-description: Checks finished work against the brief's criteria at high effort, without the history of how it was built. Runs the full checks, tries inputs that must fail, and gives a pass or a fail for each criterion. Also judges findings or claims against their sources. Use after a unit of work and before you report it done. Give it the work, the criteria and the full check, not your conclusion.
-effort: high
+description: Checks finished work against the brief's criteria on Opus at medium effort, without the history of how it was built. Runs the full checks, tries inputs that must fail, and gives a pass or a fail for each criterion. Also judges findings or claims against their sources. Use after a unit of work and before you report it done. Give it the work, the criteria and the full check, not your conclusion.
+model: opus
+effort: medium
 disallowedTools: Edit, Write, NotebookEdit, Agent
 color: orange
 ---

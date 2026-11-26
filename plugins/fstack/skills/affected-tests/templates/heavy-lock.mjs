@@ -5,8 +5,10 @@
  *
  *   node scripts/heavy-lock.mjs <command> [arguments]   run any command under the lock
  *
- * scripts/verify.mjs takes the lock itself: it calls holdHeavyLock() first.
- * Give other heavy scripts, such as an e2e run or a build, the same first line.
+ * scripts/verify.mjs takes the lock itself: it calls holdHeavyLock() before it
+ * starts a command. Before that call it only reads git and checks its gate, so
+ * a refused run does not wait. Give other heavy scripts, such as an e2e run or
+ * a build, a call to holdHeavyLock() before their first heavy step.
  * A job waits up to two hours for the lock.
  *
  * A job that runs inside a job that holds the lock does not wait for it. So
@@ -133,7 +135,9 @@ export function underLock(command, args) {
 
 /**
  * Run this script again under the lock and exit with its status, unless a job
- * above it holds the lock. Call it before the script does any work.
+ * above it holds the lock. The second run starts from the top, so the work
+ * before this call runs twice. Keep that work light, and call this before the
+ * first heavy step.
  */
 export function holdHeavyLock() {
   if (heldAbove()) return;

@@ -15,6 +15,7 @@ import {
   EXTRA_TESTS,
   PACKAGE,
   READS_THE_WHOLE_REPO,
+  ruleOf,
   SCRIPT_TESTS,
   SCRIPTS_DIR,
   scopeOf,
@@ -81,6 +82,44 @@ describe('what an affected verify tests', () => {
 
   it('runs nothing when nothing changed', () => {
     assert.deepEqual(scopeOf([]), { packages: 'none', extra: [], scripts: false });
+  });
+});
+
+describe('the rule that each changed file matches', () => {
+  it('names the package of a file in one', () => {
+    assert.deepEqual(ruleOf('packages/core/src/index.ts'), {
+      rule: 'package',
+      package: 'packages/core',
+      extra: [],
+      scripts: false,
+    });
+  });
+
+  it('names the script tests for a file in the scripts folder', () => {
+    assert.deepEqual(ruleOf('scripts/release.mjs'), { rule: 'scripts', extra: [], scripts: true });
+  });
+
+  it('names NO_TESTS for docs', () => {
+    assert.deepEqual(ruleOf('docs/guide.md'), { rule: 'no-tests', extra: [], scripts: false });
+  });
+
+  it('names the root rule for a root file', () => {
+    assert.deepEqual(ruleOf('pnpm-lock.yaml'), { rule: 'root', extra: [], scripts: true });
+  });
+
+  it('adds what EXTRA_TESTS names', () => {
+    assert.deepEqual(ruleOf('apps/web/public/fonts/a.woff2', SAMPLE_EXTRA), {
+      rule: 'package',
+      package: 'apps/web',
+      extra: ['@acme/api'],
+      scripts: false,
+    });
+    const docs = [{ path: /^docs\/api\//, tests: ['@acme/api', SCRIPT_TESTS] }];
+    assert.deepEqual(ruleOf('docs/api/a.md', docs), {
+      rule: 'no-tests',
+      extra: ['@acme/api'],
+      scripts: true,
+    });
   });
 });
 

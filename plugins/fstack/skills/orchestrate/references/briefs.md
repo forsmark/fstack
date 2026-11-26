@@ -42,7 +42,7 @@ Leave alone: <paths, interfaces, dependencies>
 Done when:
 1. <an observable result>
 2. <a failure case that behaves right, such as bad input that is refused>
-3. <the checks pass, such as the affected verify in AGENTS.md>
+3. <the checks pass, such as the affected verify in AGENTS.md, with the affected list in the report>
 Commit: <yes, and the message style> | no
 ```
 

@@ -15,9 +15,11 @@ import type { Told } from '../types'
 // Figures go out three ways, in the script's JSON shape:
 //   - the tool mcp__usage-limits__read, for Claude
 //   - the file ~/.claude/usage/limits.json, for shell hooks and the script
-//   - a notice to Claude when a window reaches THRESHOLD, or when no figure exists
+//   - a notice to Claude when a window reaches THRESHOLD, unless it resets
+//     within RESET_SOON_S, or when no figure exists
 const TOOL = 'mcp__usage-limits__read'
 const THRESHOLD = 90
+const RESET_SOON_S = 15 * 60 // A window that resets this soon gets no handoff notice.
 const FRESH_S = 300 // A figure this young needs no second source.
 const MAX_AGE_S = 900 // Older than this, a figure says nothing about now.
 const SAME_RESET_S = 120 // Reset times this close name the same period.
@@ -229,8 +231,11 @@ async function tell($: EngineInterface, text: string, toast: string) {
 
 // Sends each notice once: "unknown" once per session, the handoff once per
 // window and period. A window that fell back under the threshold arms again.
+// A window that resets within RESET_SOON_S gets no handoff. Claude continues,
+// and the reset frees the window. Each check looks at the window again.
 async function notify($: EngineInterface, limits: Limits | undefined) {
   const state = await read($, told)
+  const nowS = (await $.clock.now()) / 1000
   if (!limits) {
     if (state.isUnknownTold) return
     if (await tell($, UNKNOWN_NOTICE, 'usage-limits: usage unknown, no figure exists')) {
@@ -249,6 +254,8 @@ async function notify($: EngineInterface, limits: Limits | undefined) {
     const period = w.resets_at ?? 0
     const isSamePeriod = toldFor !== undefined && (period === 0 || toldFor === 0 || Math.abs(toldFor - period) <= SAME_RESET_S)
     if (isSamePeriod) continue
+    // Count from now: the figure's checked_at can be 15 minutes old.
+    if (w.resets_at !== undefined && w.resets_at - nowS <= RESET_SOON_S) continue
     const percent = Math.round(w.used_percentage)
     const name = NAMES[kind]
     if (await tell($, handoffNotice(name, percent), `usage-limits: ${name} usage at ${percent}%, asking Claude for a handoff`)) {

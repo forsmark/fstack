@@ -6,6 +6,7 @@ Stack: {{STACK}}
 
 ## Commands
 
+- `node scripts/verify.mjs --affected --list` prints each file changed since origin/main, the rule it matched, and the commands that the affected verify starts. It runs nothing. Run it at the end of your work, and put its list in your report. The affected verify refuses to run until this command printed the same list.
 - `node scripts/verify.mjs --affected` runs the checks and the tests that the changes since origin/main can reach. Run it once, at the end of your work, on a clean tree.
 - `node scripts/verify.mjs` runs everything. It runs before a release.
 - `node tools/spec-checks/bin/spec-checks verify` runs the spec checks. Run it before you archive a change, and after a merge that touched `openspec/`.
